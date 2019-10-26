@@ -1,0 +1,13 @@
+.make
+.lint2
+.lint3
+.check2
+.check3
+.test2
+.test3
+*.pyc
+*.swp
+.mypy_cache
+__pycache__
+build
+
