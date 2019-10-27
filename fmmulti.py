@@ -6,28 +6,37 @@ from logging import debug as debg
 import tempfile
 import os
 import sys
-from typing import (Dict, List, Optional, Text, )
-from xml.parsers.expat import ParserCreate
+from typing import (Dict, List, Optional, Text, Tuple, )
+from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
+
+Optional
 
 
 class runmode(Enum):  # {{{1
+    # {{{1
+    through = 0
     normal = 1
-    through = 2
+    doc = 2
+    test = 3
+
+    def t(self) -> Text:  # {{{1
+        t = Text(self)
+        t = t.replace("runmode.", "")
+        return t
 
     @classmethod  # choices {{{1
     def choices(cls) -> List[Text]:
         ret = []
         for i in runmode:
-            t = Text(i)
-            t = t.replace("runmode.", "")
+            t = i.t()
             ret.append(t)
         return ret
 
     @classmethod  # parse {{{1
     def parse(cls, src: Text) -> 'runmode':
         for i in runmode:
-            if src == Text(i):
+            if src == i.t():
                 return i
         raise KeyError("'{}' is not a mode in {}".format(src, cls.choices()))
 
@@ -78,6 +87,9 @@ class Node(object):  # {{{1
     def __init__(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
         self.name = name
         self.attr = attrs
+        self.children: List['Node'] = []
+
+    key_attr_mode = runmode.through
 
     def compose(self) -> Text:  # {{{1
         ret = "<" + self.name
@@ -103,27 +115,58 @@ class Node(object):  # {{{1
             ret += v
         return ret
 
+    def flattern(self, exclude_self: bool) -> List['Node']:  # {{{1
+        ret = [self]
+        if exclude_self:
+            ret.clear()
+        for i in self.children:
+            ret.extend(i.flattern(False))
+        return ret
+
+    @classmethod  # key_attr {{{1
+    def key_attr(cls, a: 'Node') -> int:
+        N = 8
+        lv = a.level(cls.key_attr_mode) + (0, ) * N
+        ret = 0
+        for i in range(N):
+            ret = ret * 1000 + lv[i]
+        return ret
+
+    def level(self, mode: runmode) -> Tuple[int, ...]:  # {{{1
+        t = mode.t()
+        src = ""
+        for node in self.children:
+            if node.name != "attribute":
+                continue
+            src = node.attr.get("NAME", "")
+            if src != t:
+                continue
+            src = node.attr.get("VALUE", "")
+            break
+        else:
+            return ()
+        seq = src.split("-")
+        ret = tuple(int(i) for i in seq)
+        return ret
+
 
 class Chars(Node):  # {{{1
-    def __init__(self, data: Text) -> None:
-        self.name = "__chars__"
+    def __init__(self, data: Text) -> None:  # {{{1
+        Node.__init__(self, "__chars__", {})
         self.data = data
 
     def compose(self) -> Text:
         return self.data
 
 
-class Comment(Node):  # {{{1
-    def __init__(self, data: Text) -> None:
-        self.data = data
-
-    def compose(self) -> Text:
+class Comment(Chars):  # {{{1
+    def compose(self) -> Text:  # {{{1
         return "<!--" + self.data + "-->"
 
 
-class ENode(Node):  # {{{1
-    def __init__(self, name: Text) -> None:
-        self.name = name
+class LNode(Node):  # {{{1
+    def __init__(self, name: Text) -> None:  # {{{1
+        Node.__init__(self, name, {})
 
     def compose(self) -> Text:
         return "</" + self.name + ">"
@@ -133,7 +176,6 @@ class FMNode(Node):  # {{{1
     def __init__(self, attrs: Dict[Text, Text]) -> None:  # {{{1
         Node.__init__(self, "node", attrs)
         self.parent: Optional[FMNode] = None
-        self.children: List[Node] = []
         self.text = attrs.get("TEXT", "")
         self.id_string = attrs.get("ID", "ID_0")
         self.position = attrs.get("POSITION", "")
@@ -196,7 +238,7 @@ class FMXml(object):  # {{{1
         nod = self.cur.children[-1]
         if nod.name == name:
             return
-        nod = ENode(name)
+        nod = LNode(name)
         self.cur.children.append(nod)
 
     def enter_chars(self, data: Text) -> None:  # {{{1
@@ -215,19 +257,88 @@ class FMXml(object):  # {{{1
         ret = "<{}{}>".format(name, attr)
         return ret
 
-    @classmethod  # compose_etag {{{1
-    def compose_etag(cls, name: Text) -> Text:
+    @classmethod  # compose_ltag {{{1
+    def compose_ltag(cls, name: Text) -> Text:
         ret = "</{}>".format(name)
         return ret
 
     def output(self, fname: Text, mode: runmode) -> int:  # {{{1
         debg("out:open:" + fname)
+        if mode == runmode.through:
+            seq = self.root.children
+        else:
+            seq = self.restruct(mode)
         with open(fname, "wt") as fp:
-            for node in self.root.children:
+            for node in seq:
                 text = node.compose()
                 debg("out:" + text)
                 fp.write(text)
         return 0
+
+    def restruct(self, mode: runmode) -> List[Node]:  # {{{1
+        Node.key_attr_mode = mode
+        debg("rest:mode={}-{}".format(mode, len(self.root.children)))
+        ret: List[Node] = []
+        for node in self.root.children:
+            if not isinstance(node, FMNode):
+                ret.append(node)
+                continue
+            seq_flat = node.flattern(exclude_self=True)
+            debg("rest:flat:{}".format(len(seq_flat)))
+            # TODO(shimoda): consider nodes of the except FMNode.
+            seq_flat.sort(key=Node.key_attr)
+            for i in seq_flat:
+                debg("rest:sort:{}".format(i.name))
+            root = self.restruct_hier(seq_flat, mode)
+            ret.append(root)
+        return ret
+
+    def restruct_hier(self, seq: List[Node], mode: runmode  # {{{1
+                      ) -> FMNode:
+        root = FMNode({})
+        non: List[Node] = []
+        for node in seq:
+            levels = node.level(mode)
+            if len(levels) < 1:
+                non.append(node)
+                continue
+            debg("hier:{}".format(Text(levels)))
+            self.restruct_insert(root.children, mode, levels, node, 0)
+        root.children.insert(0, Chars("\n"))
+        root.children.extend(non)
+        return root
+
+    def restruct_insert(self, seq: List[Node], mode: runmode,  # {{{1
+                        levels: Tuple[int, ...],
+                        add: Node, depth: int) -> int:
+        """1, 2, 2-1, 3-1, 4, 5, 6-1, 7
+        """
+        if depth > 7:
+            return 1  # stopper of recursive calls.
+        f = 0
+        lv_add = levels[depth]
+        for n, node in enumerate(seq):
+            lvs = node.level(mode)
+            lv_cur = lvs[depth]
+            if lv_cur < lv_add:
+                continue
+            if lv_cur > lv_add:
+                f = n - 1
+                break
+            if depth + 1 >= len(levels):  # failed to sort?
+                return -1
+            if len(node.children) < 1:
+                f = n
+                break
+            f = self.restruct_insert(node.children, mode, levels,
+                                     add, depth + 1)
+            assert f != 0  # failed to append...????
+            return f
+        if f > 0:
+            seq.insert(f, add)
+            return f + 1
+        seq.append(add)
+        return len(seq) - 1
 
 
 def zip_extract(fname: Text) -> Text:  # {{{1
@@ -242,7 +353,7 @@ def zip_extract(fname: Text) -> Text:  # {{{1
     try:
         for zi in zf.infolist():
             debg("found entry {}".format(zi))
-            if zi.is_dir():
+            if zi.is_dir():  # type: ignore  # no `is_dir` in python2
                 continue
             with open(ret, "w") as fp:
                 fp.write(zf.extract(zi))
