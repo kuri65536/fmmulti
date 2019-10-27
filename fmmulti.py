@@ -76,10 +76,10 @@ class options(object):  # {{{1
 
 class Node(object):  # {{{1
     def __init__(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
-        self.aaa = ""
+        self.name = name
 
     def compose(self) -> Text:  # {{{1
-        return ""
+        return "<" + self.name + ">"
 
     @classmethod  # quote_attr
     def quote_attr(cls, src: Text) -> Text:  # {{{1
@@ -91,6 +91,30 @@ class Node(object):  # {{{1
         if ret.endswith("'"):
             ret = ret[:-1]
         return ret
+
+
+class Chars(Node):  # {{{1
+    def __init__(self, data: Text) -> None:
+        self.data = data
+
+    def compose(self) -> Text:
+        return self.data
+
+
+class Comment(Node):  # {{{1
+    def __init__(self, data: Text) -> None:
+        self.data = data
+
+    def compose(self) -> Text:
+        return "<!--" + self.data + "-->"
+
+
+class ENode(Node):  # {{{1
+    def __init__(self, name: Text) -> None:
+        self.name = name
+
+    def compose(self) -> Text:
+        return "</" + self.name + ">"
 
 
 class FMNode(Node):  # {{{1
@@ -111,20 +135,17 @@ class FMNode(Node):  # {{{1
             ret += ' POSITION="{}"'.format(self.position)
         ret += ' TEXT="{}"'.format(self.quote_attr(self.text))
         if len(self.children) < 1:
-            ret += "/>\n"
+            ret += "/>"
         else:
             ret += ">\n"
             for nod in self.children:
                 ret += nod.compose()
-            ret += '</node>\n'
+            ret += '</node>'
         return ret
 
 
 class FMXml(object):  # {{{1
     def __init__(self) -> None:  # {{{1
-        self.f_header, self.f_footer = True, False
-        self.t_header = ""
-        self.t_footer = ""
         self.cur = self.root = FMNode({})
 
     @classmethod  # parse {{{1
@@ -133,16 +154,15 @@ class FMXml(object):  # {{{1
         """
         ret = FMXml()
         parser = ParserCreate()
-        parser.StartElementHandler = ret.start_tag
-        parser.EndElementHandler = ret.end_tag
+        parser.StartElementHandler = ret.enter_tag
+        parser.EndElementHandler = ret.leave_tag
+        parser.CharacterDataHandler = ret.enter_chars
+        parser.CommentHandler = ret.enter_comment
         with open(fname, "rb") as fp:
             parser.ParseFile(fp)
         return ret
 
-    def start_tag(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
-        if self.f_footer:
-            self.t_footer += self.compose_tag(name, attrs)
-            return
+    def enter_tag(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
         if name == "node":
             self.f_header = False
             node = FMNode(attrs)
@@ -151,23 +171,25 @@ class FMXml(object):  # {{{1
             self.cur = node
             debg("new node:" + node.id_string)
             return
-        if self.f_header:
-            self.t_header += self.compose_tag(name, attrs)
-            debg("tag in header:" + self.t_header)
-            return
         nod = Node(name, attrs)
         self.cur.children.append(nod)
 
-    def end_tag(self, name: Text) -> None:  # {{{1
-        if self.f_footer:
-            self.t_footer += self.compose_etag(name)
-            return
+    def leave_tag(self, name: Text) -> None:  # {{{1
         if name == "node":
             assert self.cur.parent is not None
             debg("cls node:" + self.cur.id_string)
             self.cur = self.cur.parent
-            if self.cur == self.root:
-                self.f_footer = True
+            return
+        nod = ENode(name)
+        self.cur.children.append(nod)
+
+    def enter_chars(self, data: Text) -> None:  # {{{1
+        nod = Chars(data)
+        self.cur.children.append(nod)
+
+    def enter_comment(self, data: Text) -> None:  # {{{1
+        nod = Comment(data)
+        self.cur.children.append(nod)
 
     @classmethod  # compose_tag {{{1
     def compose_tag(cls, name: Text, attrs: Dict[Text, Text]) -> Text:
@@ -177,7 +199,7 @@ class FMXml(object):  # {{{1
         ret = "<{}{}>".format(name, attr)
         return ret
 
-    @classmethod  # compose_tag {{{1
+    @classmethod  # compose_etag {{{1
     def compose_etag(cls, name: Text) -> Text:
         ret = "</{}>".format(name)
         return ret
@@ -185,14 +207,10 @@ class FMXml(object):  # {{{1
     def output(self, fname: Text, mode: runmode) -> int:  # {{{1
         debg("out:open:" + fname)
         with open(fname, "wt") as fp:
-            debg("out:" + self.t_header)
-            fp.write(self.t_header)
             for node in self.root.children:
                 text = node.compose()
                 debg("out:" + text)
                 fp.write(text)
-            debg("out:" + self.t_footer)
-            fp.write(self.t_footer)
         return 0
 
 
