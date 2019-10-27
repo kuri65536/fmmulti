@@ -77,9 +77,17 @@ class options(object):  # {{{1
 class Node(object):  # {{{1
     def __init__(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
         self.name = name
+        self.attr = attrs
 
     def compose(self) -> Text:  # {{{1
-        return "<" + self.name + ">"
+        ret = "<" + self.name
+        for k, v in self.attr.items():
+            a = self.quote_attr(v)
+            ret += ' {}="{}"'.format(k, a)
+        if self.name == "map":  # TODO(shimoda): dirty hack...
+            return ret + ">"
+        ret += "/>"
+        return ret
 
     @classmethod  # quote_attr
     def quote_attr(cls, src: Text) -> Text:  # {{{1
@@ -95,6 +103,7 @@ class Node(object):  # {{{1
 
 class Chars(Node):  # {{{1
     def __init__(self, data: Text) -> None:
+        self.name = "__chars__"
         self.data = data
 
     def compose(self) -> Text:
@@ -119,6 +128,7 @@ class ENode(Node):  # {{{1
 
 class FMNode(Node):  # {{{1
     def __init__(self, attrs: Dict[Text, Text]) -> None:  # {{{1
+        Node.__init__(self, "node", attrs)
         self.parent: Optional[FMNode] = None
         self.children: List[Node] = []
         self.text = attrs.get("TEXT", "")
@@ -137,7 +147,7 @@ class FMNode(Node):  # {{{1
         if len(self.children) < 1:
             ret += "/>"
         else:
-            ret += ">\n"
+            ret += ">"
             for nod in self.children:
                 ret += nod.compose()
             ret += '</node>'
@@ -179,6 +189,9 @@ class FMXml(object):  # {{{1
             assert self.cur.parent is not None
             debg("cls node:" + self.cur.id_string)
             self.cur = self.cur.parent
+            return
+        nod = self.cur.children[-1]
+        if nod.name == name:
             return
         nod = ENode(name)
         self.cur.children.append(nod)
