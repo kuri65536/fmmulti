@@ -6,12 +6,14 @@ from logging import debug as debg
 import tempfile
 import os
 import sys
-from typing import Dict, List, Text
+from typing import (Dict, List, Optional, Text, )
+from xml.parsers.expat import ParserCreate
 from zipfile import ZipFile
 
 
 class runmode(Enum):  # {{{1
     normal = 1
+    through = 2
 
     @classmethod  # choices {{{1
     def choices(cls) -> List[Text]:
@@ -58,6 +60,8 @@ class options(object):  # {{{1
         src = ret.fname_zip = opts.input_zip_name
         if not isinstance(src, Text):
             src = ""
+        if len(ret.fname_out) > 0:
+            return ret
         if len(src) < 1:
             src = ret.fname_xml
         if len(src) < 1:
@@ -70,32 +74,125 @@ class options(object):  # {{{1
         return ret
 
 
-class FMNode(object):  # {{{1
+class Node(object):  # {{{1
+    def __init__(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
+        self.aaa = ""
+
+    def compose(self) -> Text:  # {{{1
+        return ""
+
+    @classmethod  # quote_attr
+    def quote_attr(cls, src: Text) -> Text:  # {{{1
+        # TODO(shimoda): match to X'ML
+        _ret = src.encode('ascii', 'xmlcharrefreplace')
+        ret = Text(_ret)
+        if ret.startswith("b'"):
+            ret = ret[2:]
+        if ret.endswith("'"):
+            ret = ret[:-1]
+        return ret
+
+
+class FMNode(Node):  # {{{1
     def __init__(self, attrs: Dict[Text, Text]) -> None:  # {{{1
-        pass
+        self.parent: Optional[FMNode] = None
+        self.children: List[Node] = []
+        self.text = attrs.get("TEXT", "")
+        self.id_string = attrs.get("ID", "ID_0")
+        self.position = attrs.get("POSITION", "")
+        self.ts_create = int(attrs.get("CREATED", "-1"))
+        self.ts_modify = int(attrs.get("MODIFIED", "-1"))
+
+    def compose(self) -> Text:  # {{{1
+        debg("compose:node:" + self.id_string)
+        ret = '<node CREATED="{}" ID="{}" MODIFIED="{}"'.format(
+                self.ts_create, self.id_string, self.ts_modify)
+        if self.position:
+            ret += ' POSITION="{}"'.format(self.position)
+        ret += ' TEXT="{}"'.format(self.quote_attr(self.text))
+        if len(self.children) < 1:
+            ret += "/>\n"
+        else:
+            ret += ">\n"
+            for nod in self.children:
+                ret += nod.compose()
+            ret += '</node>\n'
+        return ret
 
 
 class FMXml(object):  # {{{1
     def __init__(self) -> None:  # {{{1
-        self.f_header = True
+        self.f_header, self.f_footer = True, False
         self.t_header = ""
         self.t_footer = ""
-        self.cur = FMNode({})
+        self.cur = self.root = FMNode({})
 
     @classmethod  # parse {{{1
     def parse(cls, fname: Text) -> 'FMXml':
         """parse Nodes from xml.
         """
         ret = FMXml()
+        parser = ParserCreate()
+        parser.StartElementHandler = ret.start_tag
+        parser.EndElementHandler = ret.end_tag
+        with open(fname, "rb") as fp:
+            parser.ParseFile(fp)
         return ret
 
     def start_tag(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
-        pass
+        if self.f_footer:
+            self.t_footer += self.compose_tag(name, attrs)
+            return
+        if name == "node":
+            self.f_header = False
+            node = FMNode(attrs)
+            node.parent = self.cur
+            self.cur.children.append(node)
+            self.cur = node
+            debg("new node:" + node.id_string)
+            return
+        if self.f_header:
+            self.t_header += self.compose_tag(name, attrs)
+            debg("tag in header:" + self.t_header)
+            return
+        nod = Node(name, attrs)
+        self.cur.children.append(nod)
 
     def end_tag(self, name: Text) -> None:  # {{{1
-        pass
+        if self.f_footer:
+            self.t_footer += self.compose_etag(name)
+            return
+        if name == "node":
+            assert self.cur.parent is not None
+            debg("cls node:" + self.cur.id_string)
+            self.cur = self.cur.parent
+            if self.cur == self.root:
+                self.f_footer = True
 
-    def output(self, mode: runmode) -> int:  # {{{1
+    @classmethod  # compose_tag {{{1
+    def compose_tag(cls, name: Text, attrs: Dict[Text, Text]) -> Text:
+        attr = ""
+        for k, v in attrs.items():
+            attr += ' {}="{}"'.format(k, v)
+        ret = "<{}{}>".format(name, attr)
+        return ret
+
+    @classmethod  # compose_tag {{{1
+    def compose_etag(cls, name: Text) -> Text:
+        ret = "</{}>".format(name)
+        return ret
+
+    def output(self, fname: Text, mode: runmode) -> int:  # {{{1
+        debg("out:open:" + fname)
+        with open(fname, "wt") as fp:
+            debg("out:" + self.t_header)
+            fp.write(self.t_header)
+            for node in self.root.children:
+                text = node.compose()
+                debg("out:" + text)
+                fp.write(text)
+            debg("out:" + self.t_footer)
+            fp.write(self.t_footer)
         return 0
 
 
@@ -128,9 +225,8 @@ def main(args: List[Text]) -> int:  # {{{1
     if len(opts.fname_xml) < 1:
         options.parser().print_help()
         return 1
-    xml = FMXml()
-    xml.parse(opts.fname_xml)
-    return xml.output(opts.mode)
+    xml = FMXml.parse(opts.fname_xml)
+    return xml.output(opts.fname_out, opts.mode)
 
 
 if __name__ == "__main__":  # {{{1
