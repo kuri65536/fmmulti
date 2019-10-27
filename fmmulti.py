@@ -89,6 +89,12 @@ class Node(object):  # {{{1
         self.attr = attrs
         self.children: List['Node'] = []
 
+    def copy(self, include_children: bool=False) -> 'Node':  # {{{1
+        ret = Node(self.name, self.attr)
+        if include_children:
+            ret.children = self.children + []
+        return ret
+
     key_attr_mode = runmode.through
 
     def compose(self) -> Text:  # {{{1
@@ -116,11 +122,20 @@ class Node(object):  # {{{1
         return ret
 
     def flattern(self, exclude_self: bool) -> List['Node']:  # {{{1
-        ret = [self]
+        dmy = self.copy()
+        ret = [dmy]
         if exclude_self:
             ret.clear()
         for i in self.children:
-            ret.extend(i.flattern(False))
+            if isinstance(i, FMNode):
+                ret.extend(i.flattern(False))
+            elif exclude_self:
+                debg("flat:normal-a-{}".format(i.name))
+                ret.append(i)
+            else:
+                debg("flat:normal-d-{}".format(i.name))
+                dmy.children.append(i)
+        Node.rtrim_enter(dmy.children)
         return ret
 
     @classmethod  # key_attr {{{1
@@ -148,6 +163,45 @@ class Node(object):  # {{{1
         seq = src.split("-")
         ret = tuple(int(i) for i in seq)
         return ret
+
+    def is_enter(self) -> bool:  # {{{1
+        if not isinstance(self, Chars):
+            return False
+        if self.data != "\n":
+            return False
+        return True
+
+    @classmethod  # insert_enter {{{1
+    def insert_enter(cls, seq: List['Node'], n: int) -> None:
+        if len(seq) < 1 or n == -1:
+            seq.append(Chars("\n"))
+            return
+        if n >= len(seq):
+            n = -1
+        if n < 0:
+            n = len(seq) + n
+            assert n >= 0, "%d" % n
+        node = seq[n]
+        if node.is_enter():
+            return
+        seq.insert(n, Chars("\n"))
+
+    @classmethod  # rtrim_enter {{{1
+    def rtrim_enter(cls, seq: List['Node']) -> None:
+        n = 0
+        rev = seq + []
+        rev.reverse()
+        for i in rev:
+            if not i.is_enter():
+                break
+            n += 1
+        if n == 0:
+            seq.append(Chars('\n'))
+            return
+        if n == 1:
+            return
+        for j in range(n - 1):
+            del seq[-1]
 
 
 class Chars(Node):  # {{{1
@@ -181,6 +235,17 @@ class FMNode(Node):  # {{{1
         self.position = attrs.get("POSITION", "")
         self.ts_create = int(attrs.get("CREATED", "-1"))
         self.ts_modify = int(attrs.get("MODIFIED", "-1"))
+
+    def copy(self, include_children: bool=False) -> 'FMNode':  # {{{1
+        ret = FMNode({
+            "CREATED": "{}".format(self.ts_create),
+            "MODIFIED": "{}".format(self.ts_modify),
+            "ID": self.id_string,
+            "TEXT": self.text,
+            "POSITION": self.position})
+        if include_children:
+            ret.children = ret.children + []
+        return ret
 
     def compose(self) -> Text:  # {{{1
         debg("compose:node:" + self.id_string)
@@ -281,21 +346,22 @@ class FMXml(object):  # {{{1
         ret: List[Node] = []
         for node in self.root.children:
             if not isinstance(node, FMNode):
+                debg("rest:normal-node={}".format(node.name))
                 ret.append(node)
                 continue
             seq_flat = node.flattern(exclude_self=True)
             debg("rest:flat:{}".format(len(seq_flat)))
-            # TODO(shimoda): consider nodes of the except FMNode.
             seq_flat.sort(key=Node.key_attr)
             for i in seq_flat:
                 debg("rest:sort:{}".format(i.name))
             root = self.restruct_hier(seq_flat, mode)
             ret.append(root)
+        debg("rest:ret={}".format(len(ret)))
         return ret
 
     def restruct_hier(self, seq: List[Node], mode: runmode  # {{{1
                       ) -> FMNode:
-        root = FMNode({})
+        root = FMNode({"TEXT": mode.t()})
         non: List[Node] = []
         for node in seq:
             levels = node.level(mode)
@@ -304,8 +370,10 @@ class FMXml(object):  # {{{1
                 continue
             debg("hier:{}".format(Text(levels)))
             self.restruct_insert(root.children, mode, levels, node, 0)
-        root.children.insert(0, Chars("\n"))
+        Node.insert_enter(root.children, 0)
+        Node.insert_enter(root.children, -1)
         root.children.extend(non)
+        Node.insert_enter(root.children, -1)
         return root
 
     def restruct_insert(self, seq: List[Node], mode: runmode,  # {{{1
@@ -335,8 +403,10 @@ class FMXml(object):  # {{{1
             assert f != 0  # failed to append...????
             return f
         if f > 0:
+            Node.insert_enter(seq, f)
             seq.insert(f, add)
             return f + 1
+        Node.insert_enter(seq, -1)
         seq.append(add)
         return len(seq) - 1
 
