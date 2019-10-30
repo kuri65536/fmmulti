@@ -53,7 +53,7 @@ class options(object):  # {{{1
         arg = ArgumentParser()
         arg.add_argument("-o", "--output", default="")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
-                         default=Text(runmode.normal))
+                         default=runmode.normal.t())
         arg.add_argument("-i", "--input-xml", default="")
         arg.add_argument("input_zip_name", type=Text, nargs="?")
         return arg
@@ -160,9 +160,32 @@ class Node(object):  # {{{1
             break
         else:
             return ()
+        if src == "root":
+            return (-1, )
         seq = src.split("-")
         ret = tuple(int(i) for i in seq)
         return ret
+
+    def level_cmp(self, mode: runmode, b: Tuple[int, ...], depth: int  # {{{1
+                  ) -> int:
+        """returns: eq => 0
+            self vs b
+            1.2 vs 1.1 => 1 (gt)
+            1.2 vs 1 => 1 (gt)
+            1 vs 1.2 => -1 (lt)
+        """
+        levels_a, levels_b = self.level(mode), b
+        for i in range(depth):
+            if i >= len(levels_a):
+                return -1
+            if i >= len(levels_b):
+                return 1
+            j, k = levels_a[i], levels_b[i]
+            if j > k:
+                return 1
+            if j < k:
+                return -1
+        return 0
 
     def is_enter(self) -> bool:  # {{{1
         if not isinstance(self, Chars):
@@ -384,13 +407,11 @@ class FMXml(object):  # {{{1
         if depth > 7:
             return 1  # stopper of recursive calls.
         f = 0
-        lv_add = levels[depth]
         for n, node in enumerate(seq):
-            lvs = node.level(mode)
-            lv_cur = lvs[depth]
-            if lv_cur < lv_add:
+            cmp = node.level_cmp(mode, levels, depth + 1)
+            if cmp > 0:
                 continue
-            if lv_cur > lv_add:
+            if cmp < 0:
                 f = n - 1
                 break
             if depth + 1 >= len(levels):  # failed to sort?
