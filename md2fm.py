@@ -2,6 +2,7 @@
 from argparse import ArgumentParser
 import logging
 from logging import debug as debg
+import re
 import os
 import sys
 import time
@@ -75,7 +76,7 @@ class Node(object):  # {{{1
             ret += ' {}="{}"'.format(k, a)
         if self.name == "map":  # TODO(shimoda): dirty hack...
             return ret + ">"
-        ret += "/>"
+        ret += "/>\n"
         return ret
 
 
@@ -115,6 +116,7 @@ class MDNode(Node):  # {{{1
         if len(self.note) > 0:
             node = NodeNote(self.note)
             self.children.insert(0, node)
+        self.children.insert(0, self.attr_section_number())
         if len(self.children) < 1:
             ret += "/>\n"
         else:
@@ -123,6 +125,34 @@ class MDNode(Node):  # {{{1
                 ret += nod.compose()
             ret += '</node>\n'
         return ret
+
+    def attr_section_number(self) -> Node:  # {{{1
+        ret = Node("attribute")
+        num = self.attr_section_number_from_title()
+        if len(num) < 1:
+            num = self.attr_section_number_from_parent(0)
+        ret.attr["NAME"] = "doc"
+        ret.attr["VALUE"] = num
+        return ret
+
+    def attr_section_number_from_title(self) -> Text:  # {{{1
+        mo = re.search(r"^ *[0-9-.]+ ", self.title)
+        if mo is None:
+            return ""
+        num: Text = mo.group()
+        num = num.replace(".", "-")
+        num = num.strip()
+        num = num.rstrip("-")
+        return num
+
+    def attr_section_number_from_parent(self, n: int) -> Text:  # {{{1
+        if self.parent is None:
+            seq = ("0", ) * n
+            return "-".join(seq)
+        num = self.parent.attr_section_number_from_title()
+        if len(num) < 1:
+            return self.parent.attr_section_number_from_parent(n + 1)
+        return num
 
     def append(self, nod: 'MDNode') -> None:  # {{{1
         self.children.append(nod)
@@ -235,7 +265,7 @@ class FMXml(object):  # {{{1
             fp.write('<!-- To view this file, '
                      'download free mind mapping software FreeMind from '
                      'http://freemind.sourceforge.net -->\n')
-            fp.write('<node>\n')
+            fp.write('<node TEXT="document">\n')
             for node in seq:
                 text = node.compose()
                 # debg("out:" + text)
