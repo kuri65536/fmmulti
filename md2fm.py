@@ -79,6 +79,23 @@ class Node(object):  # {{{1
         return ret
 
 
+class NodeNote(Node):  # {{{1
+    def __init__(self, note: Text) -> None:  # {{{1
+        self.note = note
+
+    def compose(self) -> Text:  # {{{1
+        rt1 = ('<richcontent TYPE="NOTE"><html>\n  <head>\n  </head>\n'
+               "  <body>\n"
+               "    <p>\n"
+               "      <pre>\n")
+        rt2 = ("      </pre>\n"
+               "    </p>\n"
+               "  </body>\n"
+               "</html></richcontent>\n")
+        ret = rt1 + cmn.quote_xml(self.note) + rt2
+        return ret
+
+
 class MDNode(Node):  # {{{1
     def __init__(self, title: Text, buf: List[Text], n: int) -> None:  # {{{1
         Node.__init__(self, "section")
@@ -87,7 +104,7 @@ class MDNode(Node):  # {{{1
 
         self.parent: Optional[MDNode] = None
         self.title = title
-        self.html = "\n".join(buf)
+        self.note = "\n".join(buf)
         self.n_level = n
 
     def compose(self) -> Text:  # {{{1
@@ -95,6 +112,9 @@ class MDNode(Node):  # {{{1
         ret = '<node CREATED="{}" ID="{}" MODIFIED="{}"'.format(
                 -1, int(time.time() * 1000), -1)
         ret += ' TEXT="{}"'.format(cmn.quote_attr(self.title))
+        if len(self.note) > 0:
+            node = NodeNote(self.note)
+            self.children.insert(0, node)
         if len(self.children) < 1:
             ret += "/>\n"
         else:

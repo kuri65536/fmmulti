@@ -1,5 +1,8 @@
 #! env python3
 from typing import (Text, )
+from xml.sax.saxutils import escape as quote_xml
+
+quote_xml
 
 
 def quote_attr(src: Text) -> Text:  # {{{1
