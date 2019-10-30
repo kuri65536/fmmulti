@@ -1,9 +1,37 @@
 #! env python3
+'''
+Copyright (c) 2019, shimoda as kuri65536 _dot_ hot mail _dot_ com
+                    ( email address: convert _dot_ to . and joint string )
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v.2.0. If a copy of the MPL was not distributed with this file,
+You can obtain one at https://mozilla.org/MPL/2.0/.
+'''
+import os
 from typing import (Dict, List, Text, )
 from xml.sax.saxutils import escape as quote_xml
 
 List
 quote_xml
+
+
+def number_output(f_override: bool, src: Text, sfx: Text) -> Text:  # {{{1
+    p = os.path.dirname(src)
+    src = os.path.basename(src)
+    src, ext = os.path.splitext(src)
+
+    def fn(i: int) -> Text:
+        s = (("-%d" % i) if i > 0 else "") + sfx
+        return os.path.join(p, src + s)  # type: ignore
+
+    n = 0
+    ret = fn(n)
+    if f_override:
+        return ret
+    while os.path.exists(ret):
+        n += 1
+        ret = fn(n)
+    return ret
 
 
 def quote_attr(src: Text) -> Text:  # {{{1

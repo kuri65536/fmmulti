@@ -1,4 +1,12 @@
 #! env python3
+'''
+Copyright (c) 2019, shimoda as kuri65536 _dot_ hot mail _dot_ com
+                    ( email address: convert _dot_ to . and joint string )
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v.2.0. If a copy of the MPL was not distributed with this file,
+You can obtain one at https://mozilla.org/MPL/2.0/.
+'''
 from argparse import ArgumentParser
 import logging
 from logging import debug as debg
@@ -41,26 +49,7 @@ class options(object):  # {{{1
         if len(src) < 1:
             ret.fname_out = "/dev/stdout"
         else:
-            ret.fname_out = cls.parse_output(opts.override, src)
-        return ret
-
-    @classmethod  # parse_output {{{1
-    def parse_output(cls, f_override: bool, src: Text) -> Text:
-        p = os.path.dirname(src)
-        src = os.path.basename(src)
-        src, ext = os.path.splitext(src)
-
-        def fn(i: int) -> Text:
-            sfx = (("-%d" % i) if i > 0 else "") + ".mm"
-            return os.path.join(p, src + sfx)  # type: ignore
-
-        n = 0
-        ret = fn(n)
-        if f_override:
-            return ret
-        while os.path.exists(ret):
-            n += 1
-            ret = fn(n)
+            ret.fname_out = cmn.number_output(opts.override, src, ".mm")
         return ret
 
 

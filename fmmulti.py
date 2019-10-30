@@ -1,10 +1,17 @@
 #! env python3
+'''
+Copyright (c) 2019, shimoda as kuri65536 _dot_ hot mail _dot_ com
+                    ( email address: convert _dot_ to . and joint string )
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v.2.0. If a copy of the MPL was not distributed with this file,
+You can obtain one at https://mozilla.org/MPL/2.0/.
+'''
 from argparse import ArgumentParser
 from enum import Enum
 import logging
 from logging import debug as debg
 import tempfile
-import os
 import sys
 from typing import (Dict, List, Optional, Text, Tuple, )
 from xml.parsers.expat import ParserCreate  # type: ignore
@@ -55,6 +62,7 @@ class options(object):  # {{{1
     def parser(cls) -> ArgumentParser:  # {{{1
         arg = ArgumentParser()
         arg.add_argument("-o", "--output", default="")
+        arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
                          default=runmode.normal.t())
         arg.add_argument("-i", "--input-xml", default="")
@@ -73,16 +81,15 @@ class options(object):  # {{{1
         if not isinstance(src, Text):
             src = ""
         if len(ret.fname_out) > 0:
+            src = ret.fname_out
+            ret.fname_out = cmn.number_output(opts.override, src, ".mm")
             return ret
         if len(src) < 1:
             src = ret.fname_xml
         if len(src) < 1:
             ret.fname_out = "/dev/stdout"
         else:
-            p = os.path.dirname(src)
-            src = os.path.basename(src)
-            src, ext = os.path.splitext(src)
-            ret.fname_out = os.path.join(p, src + "-1.mm")
+            ret.fname_out = cmn.number_output(opts.override, src, ".mm")
         return ret
 
 
