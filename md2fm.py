@@ -7,6 +7,8 @@ import sys
 import time
 from typing import (Dict, Iterable, List, Optional, Text, )
 
+import common as cmn
+
 Dict, Optional
 
 
@@ -69,25 +71,11 @@ class Node(object):  # {{{1
     def compose(self) -> Text:  # {{{1
         ret = "<" + self.name
         for k, v in self.attr.items():
-            a = self.quote_attr(v)
+            a = cmn.quote_attr(v)
             ret += ' {}="{}"'.format(k, a)
         if self.name == "map":  # TODO(shimoda): dirty hack...
             return ret + ">"
         ret += "/>"
-        return ret
-
-    @classmethod  # quote_attr
-    def quote_attr(cls, src: Text) -> Text:  # {{{1
-        ret = ""
-        for ch in src:
-            _v = ch.encode('ascii', 'xmlcharrefreplace')
-            v = Text(_v)
-            v = v[2:-1]  # remove "b'" and "'"
-            if v.startswith("&#") and v.endswith(";"):
-                v = v[2:-1]
-                n = int(v)
-                v = "&#x{:x};".format(n)
-            ret += v
         return ret
 
 
@@ -106,7 +94,7 @@ class MDNode(Node):  # {{{1
         debg("compose:node:" + Text(self.n_level))
         ret = '<node CREATED="{}" ID="{}" MODIFIED="{}"'.format(
                 -1, int(time.time() * 1000), -1)
-        ret += ' TEXT="{}"'.format(self.quote_attr(self.title))
+        ret += ' TEXT="{}"'.format(cmn.quote_attr(self.title))
         if len(self.children) < 1:
             ret += "/>\n"
         else:

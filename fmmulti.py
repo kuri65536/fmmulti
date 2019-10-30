@@ -10,6 +10,8 @@ from typing import (Dict, List, Optional, Text, Tuple, )
 from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
 
+import common as cmn
+
 Optional
 
 
@@ -100,25 +102,11 @@ class Node(object):  # {{{1
     def compose(self) -> Text:  # {{{1
         ret = "<" + self.name
         for k, v in self.attr.items():
-            a = self.quote_attr(v)
+            a = cmn.quote_attr(v)
             ret += ' {}="{}"'.format(k, a)
         if self.name == "map":  # TODO(shimoda): dirty hack...
             return ret + ">"
         ret += "/>"
-        return ret
-
-    @classmethod  # quote_attr
-    def quote_attr(cls, src: Text) -> Text:  # {{{1
-        ret = ""
-        for ch in src:
-            _v = ch.encode('ascii', 'xmlcharrefreplace')
-            v = Text(_v)
-            v = v[2:-1]  # remove "b'" and "'"
-            if v.startswith("&#") and v.endswith(";"):
-                v = v[2:-1]
-                n = int(v)
-                v = "&#x{:x};".format(n)
-            ret += v
         return ret
 
     def flattern(self, exclude_self: bool) -> List['Node']:  # {{{1
@@ -276,7 +264,7 @@ class FMNode(Node):  # {{{1
                 self.ts_create, self.id_string, self.ts_modify)
         if self.position:
             ret += ' POSITION="{}"'.format(self.position)
-        ret += ' TEXT="{}"'.format(self.quote_attr(self.text))
+        ret += ' TEXT="{}"'.format(cmn.quote_attr(self.text))
         if len(self.children) < 1:
             ret += "/>"
         else:
