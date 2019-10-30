@@ -11,6 +11,7 @@ from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
 
 import common as cmn
+from common import Node as Nod1, NodeNote
 
 Optional
 
@@ -85,13 +86,8 @@ class options(object):  # {{{1
         return ret
 
 
-class Node(object):  # {{{1
-    def __init__(self, name: Text, attrs: Dict[Text, Text]) -> None:  # {{{1
-        self.name = name
-        self.attr = attrs
-        self.children: List['Node'] = []
-
-    def copy(self, include_children: bool=False) -> 'Node':  # {{{1
+class Node(Nod1):  # {{{1
+    def copy(self, include_children: bool=False) -> Nod1:  # {{{1
         ret = Node(self.name, self.attr)
         if include_children:
             ret.children = self.children + []
@@ -99,17 +95,7 @@ class Node(object):  # {{{1
 
     key_attr_mode = runmode.through
 
-    def compose(self) -> Text:  # {{{1
-        ret = "<" + self.name
-        for k, v in self.attr.items():
-            a = cmn.quote_attr(v)
-            ret += ' {}="{}"'.format(k, a)
-        if self.name == "map":  # TODO(shimoda): dirty hack...
-            return ret + ">"
-        ret += "/>"
-        return ret
-
-    def flattern(self, exclude_self: bool) -> List['Node']:  # {{{1
+    def flattern(self, exclude_self: bool) -> List[Nod1]:  # {{{1
         dmy = self.copy()
         ret = [dmy]
         if exclude_self:
@@ -127,15 +113,16 @@ class Node(object):  # {{{1
         return ret
 
     @classmethod  # key_attr {{{1
-    def key_attr(cls, a: 'Node') -> int:
+    def key_attr(cls, a: Nod1) -> int:
         N = 8
-        lv = a.level(cls.key_attr_mode) + (0, ) * N
+        lv = cls.level(a, cls.key_attr_mode) + (0, ) * N
         ret = 0
         for i in range(N):
             ret = ret * 1000 + lv[i]
         return ret
 
-    def level(self, mode: runmode) -> Tuple[int, ...]:  # {{{1
+    @classmethod  # level {{{1
+    def level(cls, self: Nod1, mode: runmode) -> Tuple[int, ...]:
         t = mode.t()
         src = ""
         for node in self.children:
@@ -154,15 +141,16 @@ class Node(object):  # {{{1
         ret = tuple(int(i) for i in seq)
         return ret
 
-    def level_cmp(self, mode: runmode, b: Tuple[int, ...], depth: int  # {{{1
-                  ) -> int:
+    @classmethod  # level_cmp {{{1
+    def level_cmp(cls, self: Nod1, mode: runmode, b: Tuple[int, ...],
+                  depth: int) -> int:
         """returns: eq => 0
             self vs b
             1.2 vs 1.1 => 1 (gt)
             1.2 vs 1 => 1 (gt)
             1 vs 1.2 => -1 (lt)
         """
-        levels_a, levels_b = self.level(mode), b
+        levels_a, levels_b = cls.level(self, mode), b
         for i in range(depth):
             if i >= len(levels_a):
                 return -1
@@ -175,7 +163,8 @@ class Node(object):  # {{{1
                 return -1
         return 0
 
-    def is_enter(self) -> bool:  # {{{1
+    @classmethod  # is_enter {{{1
+    def is_enter(cls, self: Nod1) -> bool:
         if not isinstance(self, Chars):
             return False
         if self.data != "\n":
@@ -183,7 +172,7 @@ class Node(object):  # {{{1
         return True
 
     @classmethod  # insert_enter {{{1
-    def insert_enter(cls, seq: List['Node'], n: int) -> None:
+    def insert_enter(cls, seq: List[Nod1], n: int) -> None:
         if len(seq) < 1 or n == -1:
             seq.append(Chars("\n"))
             return
@@ -193,17 +182,17 @@ class Node(object):  # {{{1
             n = len(seq) + n
             assert n >= 0, "%d" % n
         node = seq[n]
-        if node.is_enter():
+        if cls.is_enter(node):
             return
         seq.insert(n, Chars("\n"))
 
     @classmethod  # rtrim_enter {{{1
-    def rtrim_enter(cls, seq: List['Node']) -> None:
+    def rtrim_enter(cls, seq: List[Nod1]) -> None:
         n = 0
         rev = seq + []
         rev.reverse()
         for i in rev:
-            if not i.is_enter():
+            if not cls.is_enter(i):
                 break
             n += 1
         if n == 0:
@@ -278,6 +267,7 @@ class FMNode(Node):  # {{{1
 class FMXml(object):  # {{{1
     def __init__(self) -> None:  # {{{1
         self.cur = self.root = FMNode({})
+        self.cur_rich: Optional[NodeNote] = None
 
     @classmethod  # parse {{{1
     def parse(cls, fname: Text) -> 'FMXml':
@@ -302,10 +292,22 @@ class FMXml(object):  # {{{1
             self.cur = node
             debg("new node:" + node.id_string)
             return
-        nod = Node(name, attrs)
+        if self.cur_rich is not None:
+            self.cur_rich.enter_tag(name, attrs)
+            return
+        elif name != "richcontent":
+            nod = Nod1(name, attrs)
+        else:
+            nod = self.cur_rich = NodeNote("")
         self.cur.children.append(nod)
 
     def leave_tag(self, name: Text) -> None:  # {{{1
+        if self.cur_rich is not None:
+            if name == "richcontent":
+                self.cur_rich = None
+            else:
+                self.cur_rich.leave_tag(name)
+            return
         if name == "node":
             assert self.cur.parent is not None
             debg("cls node:" + self.cur.id_string)
@@ -318,10 +320,16 @@ class FMXml(object):  # {{{1
         self.cur.children.append(nod)
 
     def enter_chars(self, data: Text) -> None:  # {{{1
+        if self.cur_rich is not None:
+            self.cur_rich.chars(data)
+            return
         nod = Chars(data)
         self.cur.children.append(nod)
 
     def enter_comment(self, data: Text) -> None:  # {{{1
+        if self.cur_rich is not None:
+            self.cur_rich.note += "<!--" + data + "-->"
+            return
         nod = Comment(data)
         self.cur.children.append(nod)
 
@@ -351,10 +359,10 @@ class FMXml(object):  # {{{1
                 fp.write(text)
         return 0
 
-    def restruct(self, mode: runmode) -> List[Node]:  # {{{1
+    def restruct(self, mode: runmode) -> List[Nod1]:  # {{{1
         Node.key_attr_mode = mode
         debg("rest:mode={}-{}".format(mode, len(self.root.children)))
-        ret: List[Node] = []
+        ret: List[Nod1] = []
         for node in self.root.children:
             if not isinstance(node, FMNode):
                 debg("rest:normal-node={}".format(node.name))
@@ -370,12 +378,12 @@ class FMXml(object):  # {{{1
         debg("rest:ret={}".format(len(ret)))
         return ret
 
-    def restruct_hier(self, seq: List[Node], mode: runmode  # {{{1
+    def restruct_hier(self, seq: List[Nod1], mode: runmode  # {{{1
                       ) -> FMNode:
         root = FMNode({"TEXT": mode.t()})
-        non: List[Node] = []
+        non: List[Nod1] = []
         for node in seq:
-            levels = node.level(mode)
+            levels = Node.level(node, mode)
             if len(levels) < 1:
                 non.append(node)
                 continue
@@ -387,16 +395,16 @@ class FMXml(object):  # {{{1
         Node.insert_enter(root.children, -1)
         return root
 
-    def restruct_insert(self, seq: List[Node], mode: runmode,  # {{{1
+    def restruct_insert(self, seq: List[Nod1], mode: runmode,  # {{{1
                         levels: Tuple[int, ...],
-                        add: Node, depth: int) -> int:
+                        add: Nod1, depth: int) -> int:
         """1, 2, 2-1, 3-1, 4, 5, 6-1, 7
         """
         if depth > 7:
             return 1  # stopper of recursive calls.
         f = 0
         for n, node in enumerate(seq):
-            cmp = node.level_cmp(mode, levels, depth + 1)
+            cmp = Node.level_cmp(node, mode, levels, depth + 1)
             if cmp > 0:
                 continue
             if cmp < 0:

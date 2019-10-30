@@ -9,6 +9,7 @@ import time
 from typing import (Dict, Iterable, List, Optional, Text, )
 
 import common as cmn
+from common import Node, NodeNote
 
 Dict, Optional
 
@@ -63,43 +64,9 @@ class options(object):  # {{{1
         return ret
 
 
-class Node(object):  # {{{1
-    def __init__(self, name: Text) -> None:  # {{{1
-        self.name = name
-        self.attr: Dict[Text, Text] = {}
-        self.children: List['Node'] = []
-
-    def compose(self) -> Text:  # {{{1
-        ret = "<" + self.name
-        for k, v in self.attr.items():
-            a = cmn.quote_attr(v)
-            ret += ' {}="{}"'.format(k, a)
-        if self.name == "map":  # TODO(shimoda): dirty hack...
-            return ret + ">"
-        ret += "/>\n"
-        return ret
-
-
-class NodeNote(Node):  # {{{1
-    def __init__(self, note: Text) -> None:  # {{{1
-        self.note = note
-
-    def compose(self) -> Text:  # {{{1
-        rt1 = ('<richcontent TYPE="NOTE"><html>\n  <head>\n  </head>\n'
-               "  <body>\n"
-               "    <p>\n"
-               "      <pre>\n")
-        rt2 = ("      </pre>\n"
-               "    </p>\n"
-               "  </body>\n"
-               "</html></richcontent>\n")
-        ret = rt1 + cmn.quote_xml(self.note) + rt2
-        return ret
-
-
 class MDNode(Node):  # {{{1
     def __init__(self, title: Text, buf: List[Text], n: int) -> None:  # {{{1
-        Node.__init__(self, "section")
+        Node.__init__(self, "section", {})
 
         title = title if not title.startswith(" ") else title[1:]
 
@@ -127,12 +94,13 @@ class MDNode(Node):  # {{{1
         return ret
 
     def attr_section_number(self) -> Node:  # {{{1
-        ret = Node("attribute")
         num = self.attr_section_number_from_title()
         if len(num) < 1:
             num = self.attr_section_number_from_parent(0)
-        ret.attr["NAME"] = "doc"
-        ret.attr["VALUE"] = num
+        ret = Node("attribute", dict(
+                        NAME="doc",
+                        VALUE=num,
+                   ))
         return ret
 
     def attr_section_number_from_title(self) -> Text:  # {{{1
