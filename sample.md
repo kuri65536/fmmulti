@@ -212,13 +212,15 @@ Markdown is a natural fit for technical documentation. Companies like GitHub are
 - [Docusaurus](https://docusaurus.io/) is a static site generator designed exclusively for creating documentation websites. It supports translations, search, and versioning.
 - [VuePress](https://vuepress.vuejs.org/) is a static site generator powered by [Vue](https://vuejs.org/) and optimized for writing technical documentation.
 - [Jekyll](https://jekyllrb.com/) was mentioned earlier in the section on websites, but it's also a good option for generating a documentation website from Markdown files. If you go this route, be sure to check out the [Jekyll documentation theme](https://idratherbewriting.com/documentation-theme-jekyll/).
-# Basic Syntax {#basic-syntax}
+
+
+# 1. Basic Syntax {#basic-syntax}
 
 Nearly all Markdown applications support the basic syntax outlined in John Gruber's original design document. There are minor variations and discrepancies between Markdown processors — those are noted inline wherever possible.
 
 T> Using Markdown doesn't mean that you can't also use HTML. You can add HTML tags to any Markdown file. This is helpful if you prefer certain HTML tags to Markdown syntax. For example, some people find that it's easier to use HTML tags for images.
 
-## Headings {#headings}
+## 1.1 Headings {#headings}
 
 To create a heading, add number signs (`#`) in front of a word or phrase. The number of number signs you use should correspond to the heading level. For example, to create a heading level three (`<h3>`), use three number signs (e.g., `### My Header`).
 
@@ -231,7 +233,7 @@ To create a heading, add number signs (`#`) in front of a word or phrase. The nu
 | `##### Heading level 5`        | `<h5>Heading level 5</h5>` |
 | `###### Heading level 6`       | `<h6>Heading level 6</h6>` |
 
-### Alternate Syntax
+### 1.1.1 Alternate Syntax
 
 Alternatively, on the line below the text, add any number of `==` characters for heading level 1 or `--` characters for heading level 2.
 
@@ -244,7 +246,7 @@ Alternatively, on the line below the text, add any number of `==` characters for
 | `---------------`              |                                        |
 
 
-## Paragraphs
+## 1.2 Paragraphs
 
 To create paragraphs, use a blank line to separate one or more lines of text. You should not indent paragraphs with spaces or tabs.
 
@@ -268,7 +270,7 @@ I really like using Markdown.
 
 I think I'll use it from now on.
 
-## Line Breaks
+## 1.3 Line Breaks
 
 To create a line break (`<br>`), end a line with two or more spaces, and then type return.
 
@@ -289,11 +291,11 @@ The rendered output looks like this:
 This is the first line.  
 And this is the second line.
 
-## Emphasis {#emphasis}
+## 1.4 Emphasis {#emphasis}
 
 You can add emphasis by making text bold or italic.
 
-### Bold {#bold}
+### 1.4.1 Bold {#bold}
 
 To bold text, add two asterisks or underscores before and after a word or phrase. To bold the middle of a word for emphasis, add two asterisks without spaces around the letters.
 
@@ -321,7 +323,7 @@ I love **bold text**.
 
 Love**is**bold
 
-### Italic {#italic}
+### 1.4.2 Italic {#italic}
 
 To italicize text, add one asterisk or underscore before and after a word or phrase. To italicize the middle of a word for emphasis, add one asterisk without spaces around the letters.
 
@@ -349,7 +351,7 @@ The *cat's meow*.
 
 A*cat*meow
 
-### Bold and Italic
+### 1.4.3 Bold and Italic
 
 To emphasize text with bold and italics at the same time, add three asterisks or underscores before and after a word or phrase.
 
@@ -375,7 +377,7 @@ The rendered output looks like this:
 
 ***Important*** text.
 
-## Blockquotes {#blockquotes}
+## 1.5 Blockquotes {#blockquotes}
 
 To create a blockquote, add a `>` in front of a paragraph.
 
@@ -395,7 +397,7 @@ The rendered output looks like this:
 
 > Dorothy followed her through many rooms.
 
-### Blockquotes with Multiple Paragraphs
+### 1.5.1 Blockquotes with Multiple Paragraphs
 
 Blockquotes can contain multiple paragraphs. Add a `>` on the blank lines between the paragraphs.
 
@@ -420,7 +422,7 @@ The rendered output looks like this:
 >
 > And this is the second paragraph.
 
-### Nested Blockquotes
+### 1.5.2 Nested Blockquotes
 
 Blockquotes can be nested. Add a `>>` in front of the paragraph you want to nest.
 
@@ -447,7 +449,7 @@ The rendered output looks like this:
 >
 >> And this is the nested paragraph.
 
-### Blockquotes with Other Elements
+### 1.5.3 Blockquotes with Other Elements
 
 Blockquotes can contain other Markdown formatted elements. Not all elements can be used — you’ll need to experiment to see which ones work.
 
@@ -482,11 +484,11 @@ The rendered output looks like this:
 >
 >  *Everything* is going **well**.
 
-## Lists
+## 1.6 Lists
 
 You can organize items into ordered and unordered lists.
 
-### Ordered Lists {#ordered-lists}
+### 1.6.1 Ordered Lists {#ordered-lists}
 
 To create an ordered list, add line items with numbers followed by periods. The numbers don’t have to be in numerical order, but the list should start with the number one.
 
@@ -565,7 +567,7 @@ The rendered output looks like this:
     2. Indented item
 4. Fourth item
 
-### Unordered Lists {#unordered-lists}
+### 1.6.2 Unordered Lists {#unordered-lists}
 
 To create an unordered list, add dashes (`-`), asterisks (`*`), or plus signs (`+`) in front of line items.
 
@@ -644,11 +646,11 @@ The rendered output looks like this:
     - Indented item
 - Fourth item
 
-### Adding Elements in Lists
+### 1.7 Adding Elements in Lists
 
 To add another element in a list while preserving the continuity of the list, indent the element four spaces or one tab, as shown in the following examples.
 
-#### Paragraphs
+#### 1.7.1 Paragraphs
 
 {title="Markdown"}
 ~~~~~~~
@@ -680,7 +682,7 @@ The rendered output looks like this:
 
 *   And here's the third list item.
 
-#### Blockquotes
+#### 1.7.2 Blockquotes
 
 {title="Markdown"}
 ~~~~~~~
@@ -715,7 +717,7 @@ The rendered output looks like this:
 
 *   And here's the third list item.
 
-#### Code Blocks
+#### 1.7.3 Code Blocks
 
 [Code blocks](#code-blocks) are normally indented four spaces or one tab. When they’re in a list, indent them eight spaces or two tabs.
 
@@ -759,7 +761,7 @@ The rendered output looks like this:
 
 3.  Update the title to match the name of your website.
 
-#### Images
+#### 1.7.4 Images
 
 {title="Markdown"}
 ~~~~~~~
@@ -792,7 +794,7 @@ The rendered output looks like this:
 
 3.  Close the file.
 
-## Code {#code}
+## 1.8 Code {#code}
 
 To denote a word or phrase as code, enclose it in tick marks (`` ` ``).
 
@@ -810,7 +812,7 @@ The rendered output looks like this:
 
 At the command prompt, type `nano`.
 
-### Escaping Tick Marks {#escaping-tick-marks}
+### 1.8.1 Escaping Tick Marks {#escaping-tick-marks}
 
 If the word or phrase you want to denote as code includes one or more tick marks, you can escape it by enclosing the word or phrase in double tick marks (`` `` ``).
 
@@ -828,7 +830,7 @@ The rendered output looks like this:
 
 ``Use `code` in your Markdown file.``
 
-### Code Blocks {#code-blocks}
+### 1.8.2 Code Blocks {#code-blocks}
 
 To create code blocks, indent every line of the block by at least four spaces or one tab.
 
@@ -861,7 +863,7 @@ The rendered output looks like this:
 
 I> To create code blocks without indenting lines, use [fenced code blocks](#fenced-code-blocks).
 
-## Horizontal Rules {#horizontal-rules}
+## 1.9 Horizontal Rules {#horizontal-rules}
 
 To create a horizontal rule, use three or more asterisks (`***`), dashes (`---`), or underscores (`___`) on a line by themselves.
 
@@ -887,7 +889,7 @@ The rendered output of all three looks identical:
 
 ***
 
-## Links {#links}
+## 1.10 Links {#links}
 
 To create a link, enclose the link text in brackets (e.g., `[Duck Duck Go]`) and then follow it immediately with the URL in parentheses (e.g., `(https://duckduckgo.com)`).
 
@@ -905,7 +907,7 @@ The rendered output looks like this:
 
 Use [Duck Duck Go](https://duckduckgo.com).
 
-### Adding Titles
+### 1.10.1 Adding Titles
 
 You can optionally add a title for a link. This will appear as a tooltip when the user hovers over the link. To add a title, enclose it in parentheses after the URL.
 
@@ -923,7 +925,7 @@ The rendered output looks like this:
 
 Use [Duck Duck Go](https://duckduckgo.com "My search engine!").
 
-### URLs and Email Addresses
+### 1.10.2 URLs and Email Addresses
 
 To quickly turn a URL or email address into a link, enclose it in angle brackets.
 
@@ -944,7 +946,7 @@ The rendered output looks like this:
 <https://eff.org>  
 <fake@example.com>
 
-### Formatting Links
+### 1.10.3 Formatting Links
 
 To [emphasize](#emphasis) links, add asterisks before and after the brackets and parentheses.
 
@@ -965,7 +967,7 @@ The rendered output looks like this:
 I love supporting **[EFF](https://eff.org)**.  
 This is the *[EFF](https://eff.org)*.
 
-### Reference-style Links
+### 1.10.4 Reference-style Links
 
 Reference-style links are a special kind of link that make URLs easier to display and read in Markdown. Reference-style links are constructed in two parts: the part you keep inline with your text and the part you store somewhere else in the file to keep the text easy to read.
 
@@ -1029,7 +1031,7 @@ The output is also identical:
 
 In a hole in the ground there lived a hobbit. Not a nasty, dirty, wet hole, filled with the ends of worms and an oozy smell, nor yet a dry, bare, sandy hole with nothing in it to sit down on or to eat: it was a [hobbit-hole](https://en.wikipedia.org/wiki/Hobbit#Lifestyle), and that means comfort.
 
-## Images {#images}
+## 1.11 Images {#images}
 
 To add an image, add an exclamation mark (`!`), followed by alt text in brackets, and the path or URL to the image asset in parentheses. You can optionally add a title after the URL in the parentheses.
 
@@ -1047,7 +1049,7 @@ The rendered output looks like this:
 
 ![Philadelphia's Magic Gardens. This place was so cool!](images/philly-magic-garden.png "Philadelphia's Magic Gardens")
 
-## Escaping Characters
+## 1.12 Escaping Characters
 
 To display a literal character that would otherwise be used to format text in a Markdown document, add a backslash (`\`) in front of the character.
 
@@ -1084,17 +1086,19 @@ You can use a backslash to escape the following characters.
 | `.`               | dot                   |
 | `!`               | exclamation mark      |
 | `|`               | pipe (see also [escaping pipe in tables](#escaping-pipe-characters-in-tables)) |
-# Extended Syntax {#extended-syntax}
+
+
+# 2 Extended Syntax {#extended-syntax}
 
 The [basic syntax](#basic-syntax) outlined in John Gruber's original design document added many of the elements needed on a day-to-day basis, but it wasn't enough for some people. That's where extended syntax comes in.
 
 Several individuals and organizations took it upon themselves to extend the basic syntax by adding additional elements like tables, code blocks, syntax highlighting, URL auto-linking, and footnotes. These elements can be enabled by using a lightweight markup language that builds upon the basic Markdown syntax, or by adding an extension to a compatible Markdown processor.
 
-## Availability
+## 2.1 Availability
 
 Not all Markdown applications support extended syntax elements. You’ll need to check whether or not the lightweight markup language your application is using supports the extended syntax elements you want to use. If it doesn’t, it may still be possible to enable extensions in your Markdown processor.
 
-### Lightweight Markup Languages
+### 2.1.1 Lightweight Markup Languages
 
 There are several lightweight markup languages that are *supersets* of Markdown. They include Gruber’s basic syntax and build upon it by adding additional elements like tables, code blocks, syntax highlighting, URL auto-linking, and footnotes. Many of the most popular Markdown applications use one of the following lightweight markup languages:
 
@@ -1104,11 +1108,11 @@ There are several lightweight markup languages that are *supersets* of Markdown.
 - [MultiMarkdown](http://fletcherpenney.net/multimarkdown/)
 - [R Markdown](https://rmarkdown.rstudio.com/)
 
-### Markdown Processors
+### 2.1.3 Markdown Processors
 
 There are [dozens of Markdown processors](https://github.com/markdown/markdown.github.com/wiki/Implementations) available. Many of them allow you to add extensions that enable extended syntax elements. Check your processor’s documentation for more information.
 
-## Tables {#tables}
+## 2.2 Tables {#tables}
 
 To add a table, use three or more hyphens (`---`) to create each column’s header, and use pipes (`|`) to separate each column. You can optionally add pipes on either end of the table.
 
@@ -1161,7 +1165,7 @@ Cell widths can vary, as shown below. The rendered output will look the same.
 
 T> Creating tables with hyphens and pipes can be tedious. To speed up the process, try using the [Markdown Tables Generator](http://www.tablesgenerator.com/markdown_tables). Build a table using the graphical interface, and then copy the generated Markdown-formatted text into your file.
 
-### Alignment
+### 2.2.1 Alignment
 
 You can align text in the columns to the left, right, or center by adding a colon (`:`) to the left, right, or on both side of the hyphens within the header row.
 
@@ -1205,17 +1209,17 @@ The rendered output looks like this:
 | Header      | Title       | Here's this   |
 | Paragraph   | Text        | And more      |
 
-### Formatting Text in Tables
+### 2.2.2 Formatting Text in Tables
 
 You can format the text within tables. For example, you can add [links](#links), [code](#code) (words or phrases in tick marks (`` ` ``) only, not [code blocks](#code-blocks)), and [emphasis](#emphasis).
 
 You can’t add headings, blockquotes, lists, horizontal rules, images, or HTML tags.
 
-### Escaping Pipe Characters in Tables {#escaping-pipe-characters-in-tables}
+### 2.2.3 Escaping Pipe Characters in Tables {#escaping-pipe-characters-in-tables}
 
 You can display a pipe (`|`) character in a table by using its HTML character code (`&#124;`).
 
-## Fenced Code Blocks {#fenced-code-blocks}
+## 2.3 Fenced Code Blocks {#fenced-code-blocks}
 
 The basic Markdown syntax allows you to create [code blocks](#code-blocks) by indenting lines by four spaces or one tab. If you find that inconvenient, try using fenced code blocks. Depending on your Markdown processor or editor, you’ll use three tick marks (```` ``` ````) or three tildes (`~~~`) on the lines before and after the code block. The best part? You don’t have to indent any lines!
 
@@ -1255,7 +1259,7 @@ The rendered output looks like this:
 
 T> Need to display tick marks inside a code block? See [this section](#escaping-tick-marks) to learn how to escape them.
 
-### Syntax Highlighting
+### 2.3.1 Syntax Highlighting
 
 Many Markdown processors support syntax highlighting for fenced code blocks. This feature allows you to add color highlighting for whatever language your code was written in. To add syntax highlighting, specify a language next to the tick marks before the fenced code block.
 
@@ -1293,7 +1297,7 @@ The rendered output looks like this:
 }
 ```
 
-## Footnotes {#footnotes}
+## 2.4 Footnotes {#footnotes}
 
 Footnotes allow you to add notes and references without cluttering the body of the document. When you create a footnote, a superscript number with a link appears where you added the footnote reference. Readers can click the link to jump to the content of the footnote at the bottom of the page.
 
@@ -1349,7 +1353,7 @@ Here's a simple footnote,[^1] and here's a longer one.[^bignote]
 
     Add as many paragraphs as you like.
 
-## Heading IDs {#heading-ids}
+## 2.5 Heading IDs {#heading-ids}
 
 Many Markdown processors support custom IDs for [headings](#headings) — some Markdown processors automatically add them. Adding custom IDs allows you to link directly to headings and modify them with CSS. To add a custom heading ID, enclose the custom ID in curly braces on the same line as the heading.
 
@@ -1363,7 +1367,7 @@ Many Markdown processors support custom IDs for [headings](#headings) — some M
 <h3 id="custom-id">My Great Heading</h3>
 ~~~~~~~
 
-### Linking to Heading IDs
+### 2.5.1 Linking to Heading IDs
 
 You can link to headings with custom IDs in the file by creating a [standard link](#links) with a number sign (`#`) followed by the custom heading ID.
 
@@ -1379,7 +1383,7 @@ You can link to headings with custom IDs in the file by creating a [standard lin
 
 Other websites can link to the heading by adding the custom heading ID to the full URL of the webpage (e.g, `[Heading IDs](https://www.eff.org/page#heading-ids)`).
 
-## Definition Lists {#definition-lists}
+## 2.6 Definition Lists {#definition-lists}
 
 Some Markdown processors allow you to create *definition lists* of terms and their corresponding definitions. To create a definition list, type the term on the first line. On the next line, type a colon followed by a space and the definition.
 
@@ -1413,7 +1417,7 @@ Second Term
 : This is one definition of the second term.
 : This is another definition of the second term.
 
-## Strikethrough {#strikethrough}
+## 2.7 Strikethrough {#strikethrough}
 
 You can “strikethrough” words by putting a horizontal line through the center of them. This feature allows you to indicate that certain words are a mistake not meant for inclusion in the document. To strikethrough words, use two tilde symbols (`~~`) before and after the words.
 
@@ -1431,7 +1435,7 @@ The rendered output looks like this:
 
 The world is ~~flat~~ round.
 
-## Task Lists {#task-lists}
+## 2.8 Task Lists {#task-lists}
 
 Task lists allow you to create a list of items with checkboxes. In Markdown applications that support task lists, checkboxes will be displayed next to the content. To create a task list, add dashes (`-`) and brackets with a space (`[ ]`) in front of task list items. To select a checkbox, add an `x` in between the brackets (`[x]`).
 
@@ -1446,7 +1450,7 @@ The rendered output looks like this:
 
 ![Task list](images/tasklist.png)
 
-## Automatic URL Linking
+## 2.9 Automatic URL Linking
 
 Many Markdown processors automatically turn URLs into links. That means if you type http://www.example.com, your Markdown processor will automatically turn it into a link even though you haven’t [used brackets](#links).
 
@@ -1464,7 +1468,7 @@ The rendered output looks like this:
 
 <http://example.com>
 
-### Disabling Automatic URL Linking
+### 2.9.1 Disabling Automatic URL Linking
 
 If you don’t want a URL to be automatically linked, you can remove the link by [denoting the URL as code](#code) with tick marks.
 
@@ -1481,11 +1485,13 @@ If you don’t want a URL to be automatically linked, you can remove the link by
 The rendered output looks like this:
 
 `http://www.example.com`
-# Cheat Sheet {#cheat-sheet}
+
+
+# 3. Cheat Sheet {#cheat-sheet}
 
 This cheat sheet provides a quick overview of all the Markdown syntax elements. It can't cover every edge case! If you need more information about any of these elements, refer back to the chapters on [basic](#basic-syntax) and [extended syntax](#extended-syntax).
 
-## Basic Syntax
+## 3.1 Basic Syntax
 
 These are the elements outlined in John Gruber's original design document. All Markdown applications support these elements.
 
@@ -1518,7 +1524,7 @@ These are the elements outlined in John Gruber's original design document. All M
 | [Image](#images)  |  `![alt text](image.jpg)`                            |
 
 
-## Extended Syntax
+## 3.2 Extended Syntax
 
 These elements extend the basic syntax by adding additional features. Not all Markdown applications support these elements.
 
@@ -1551,6 +1557,7 @@ These elements extend the basic syntax by adding additional features. Not all Ma
 | [Task List](#task-lists)  | `- [x] Write the press release`              |
 |                   | `- [ ] Update the website`                           |
 |                   | `- [ ] Contact the media`                            |
+
 
 # About the Author
 
