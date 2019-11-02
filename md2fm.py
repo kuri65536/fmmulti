@@ -157,10 +157,11 @@ class FMXml(object):  # {{{1
     def parse_markdown(cls, fname: Text) -> 'FMXml':
         """parse Nodes from markdown
         """
-        ret, buf = FMXml(), []
+        ret = FMXml()
+        buf: List[Text] = []
         for line in cls.get_lines(fname):
             line = line.rstrip("\r\n")
-            n = cls.is_section_line(line)
+            n = cls.is_section_line(line, buf)
             if n == 0:
                 buf.append(line)
                 continue
@@ -191,7 +192,7 @@ class FMXml(object):  # {{{1
             pass
 
     @classmethod  # is_section_line {{{1
-    def is_section_line(cls, line: Text) -> int:
+    def is_section_line(cls, line: Text, lines: List[Text]) -> int:
         """- did not support '#' in \`\`\`
         """
         if len(line) < 1:
@@ -199,8 +200,12 @@ class FMXml(object):  # {{{1
         if line.startswith(" ") or line.startswith("\t"):
             return 0
         if len(line.lstrip("=")) < 1:
+            if len(lines) < 1 or len(lines[-1].strip()) < 1:
+                return 0
             return n_level_1st  # 1st level
         if len(line.lstrip("-")) < 1:
+            if len(lines) < 1 or len(lines[-1].strip()) < 1:
+                return 0
             return n_level_2nd  # 2nd level
         if not line.startswith("#"):
             return 0
@@ -213,14 +218,14 @@ class FMXml(object):  # {{{1
         return n * n_level_unit
 
     def parse_markdown_build_hier(self, buf: List[Text]) -> None:  # {{{1
-        line_2nd = buf[1] if len(buf) > 1 else ""
-        n = self.is_section_line(line_2nd)
-        if n == 10:
+        line_2nd, buf2 = (buf[1], [buf[0]]) if len(buf) > 1 else ("", [])
+        n = self.is_section_line(line_2nd, buf2)
+        if n == n_level_1st:
             title, buf = buf[0], [] if len(buf) < 3 else buf[2:]
-        elif n == 11:
+        elif n == n_level_2nd:
             title, buf = buf[0], [] if len(buf) < 3 else buf[2:]
         else:
-            n = self.is_section_line(buf[0])
+            n = self.is_section_line(buf[0], [])
             title, buf = buf[0].lstrip("#"), buf[1:]
         nod = MDNode(title, buf, n)
         cur = self.cur
