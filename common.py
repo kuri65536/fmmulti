@@ -63,12 +63,20 @@ class Node(object):  # {{{1
             ret += ' {}="{}"'.format(k, a)
         return ret
 
-    def compose(self) -> Text:  # {{{1
+    def compose(self, prv: 'Node') -> Text:  # {{{1
         ret = self.compos2()
         if self.name == "map":  # TODO(shimoda): dirty hack...
             return ret + ">"
         ret += "/>\n"
         return ret
+
+
+class NodeDmy(Node):  # {{{1
+    def __init__(self) -> None:  # {{{1
+        Node.__init__(self, "### dummy ###", {})
+
+    def compose(self, prv: 'Node') -> Text:  # {{{1
+        return ""
 
 
 class NodeNote(Node):  # {{{1
@@ -77,7 +85,7 @@ class NodeNote(Node):  # {{{1
         self.note = note
         self.f_data = False
 
-    def compose(self) -> Text:  # {{{1
+    def compose(self, prv: 'Node') -> Text:  # {{{1
         rt1 = ('<richcontent TYPE="NOTE"><html>\n  <head>\n  </head>\n'
                "  <body>\n"
                "    <p>\n"

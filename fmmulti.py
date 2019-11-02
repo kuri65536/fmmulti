@@ -18,7 +18,7 @@ from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
 
 import common as cmn
-from common import Node as Nod1, NodeNote
+from common import Node as Nod1, NodeDmy, NodeNote
 
 Optional
 
@@ -144,6 +144,7 @@ class Node(Nod1):  # {{{1
             return ()
         if src == "root":
             return (-1, )
+        src = src.replace(",", "-")  # allow ',' and '-' to splitter.
         seq = src.split("-")
         ret = tuple(int(i) for i in seq)
         return ret
@@ -216,12 +217,12 @@ class Chars(Node):  # {{{1
         Node.__init__(self, "__chars__", {})
         self.data = data
 
-    def compose(self) -> Text:
+    def compose(self, prv: Nod1) -> Text:
         return self.data
 
 
 class Comment(Chars):  # {{{1
-    def compose(self) -> Text:  # {{{1
+    def compose(self, prv: Nod1) -> Text:  # {{{1
         return "<!--" + self.data + "-->"
 
 
@@ -229,7 +230,7 @@ class LNode(Node):  # {{{1
     def __init__(self, name: Text) -> None:  # {{{1
         Node.__init__(self, name, {})
 
-    def compose(self) -> Text:
+    def compose(self, prv: Nod1) -> Text:
         return "</" + self.name + ">"
 
 
@@ -254,7 +255,7 @@ class FMNode(Node):  # {{{1
             ret.children = ret.children + []
         return ret
 
-    def compose(self) -> Text:  # {{{1
+    def compose(self, prv: Nod1) -> Text:  # {{{1
         debg("compose:node:" + self.id_string)
         ret = '<node CREATED="{}" ID="{}" MODIFIED="{}"'.format(
                 self.ts_create, self.id_string, self.ts_modify)
@@ -265,8 +266,10 @@ class FMNode(Node):  # {{{1
             ret += "/>"
         else:
             ret += ">"
+            prv_child: Nod1 = NodeDmy()
             for nod in self.children:
-                ret += nod.compose()
+                ret += nod.compose(prv_child)
+                prv_child = nod
             ret += '</node>'
         return ret
 
@@ -360,10 +363,12 @@ class FMXml(object):  # {{{1
         else:
             seq = self.restruct(mode)
         with open(fname, "wt") as fp:
+            prv: Nod1 = NodeDmy()
             for node in seq:
-                text = node.compose()
+                text = node.compose(prv)
                 debg("out:" + text)
                 fp.write(text)
+                prv = node
         return 0
 
     def restruct(self, mode: runmode) -> List[Nod1]:  # {{{1
