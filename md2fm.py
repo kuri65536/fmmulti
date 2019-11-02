@@ -99,7 +99,7 @@ class MDNode(Node):  # {{{1
 
     def attr_level_score(self) -> Node:  # {{{1
         ret = Node("attribute", dict(
-                        NAME="doc",
+                        NAME="markdown-level",
                         VALUE=Text(self.n_level),
                    ))
         return ret
@@ -234,9 +234,8 @@ class FMXml(object):  # {{{1
 
     def hier_insert_and_up(self, cur: MDNode, ins: MDNode  # {{{1
                            ) -> None:
-        ni = ins.n_level
         par = cur
-        while ni <= par.n_level:
+        while par.level_diff(ins) <= 0:
             tmp = par.parent
             if tmp is None or par.n_level < n_level_unit:
                 par = self.root
