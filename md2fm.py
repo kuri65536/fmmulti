@@ -9,9 +9,8 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from argparse import ArgumentParser
 import logging
-from logging import debug as debg
+from logging import debug as debg, warning as warn
 import re
-import os
 import sys
 import time
 from typing import (Dict, Iterable, List, Optional, Text, )
@@ -20,6 +19,11 @@ import common as cmn
 from common import Node, NodeNote
 
 Dict, Optional
+
+
+n_level_unit = 100
+n_level_1st = 100
+n_level_2nd = 200
 
 
 class options(object):  # {{{1
@@ -73,6 +77,7 @@ class MDNode(Node):  # {{{1
             node = NodeNote(self.note)
             self.children.insert(0, node)
         self.children.insert(0, self.attr_section_number())
+        self.children.insert(0, self.attr_level_score())
         if len(self.children) < 1:
             ret += "/>\n"
         else:
@@ -89,6 +94,13 @@ class MDNode(Node):  # {{{1
         ret = Node("attribute", dict(
                         NAME="doc",
                         VALUE=num,
+                   ))
+        return ret
+
+    def attr_level_score(self) -> Node:  # {{{1
+        ret = Node("attribute", dict(
+                        NAME="doc",
+                        VALUE=Text(self.n_level),
                    ))
         return ret
 
@@ -112,13 +124,29 @@ class MDNode(Node):  # {{{1
         return num
 
     def append(self, nod: 'MDNode') -> None:  # {{{1
-        self.children.append(nod)
-        nod.parent = self
+        dif = self.level_diff(nod)
+        warn("append: {}".format(dif))
+        nod_dummy, n = self, self.n_level
+        for i in range(dif - 1):
+            n += n_level_unit
+            nod_dummy_child = MDNode("### dummy paragraph ###", [], n)
+            nod_dummy.children.append(nod_dummy_child)
+            nod_dummy_child.parent = nod_dummy
+            nod_dummy = nod_dummy_child
+        nod_dummy.children.append(nod)
+        nod.parent = nod_dummy
 
     def append_to_parent(self, nod: 'MDNode', root: 'MDNode') -> None:  # {{{1
         par = self.parent if self.parent is not None else root
         par.children.append(nod)
         nod.parent = par
+
+    def level_diff(self, nod: 'MDNode') -> int:  # {{{1
+        n = nod.n_level - self.n_level
+        return int(n / n_level_unit)
+
+    def __repr__(self) -> Text:  # for debug {{{1
+        return "{}-{}".format(self.n_level, self.title)
 
 
 class FMXml(object):  # {{{1
@@ -140,16 +168,17 @@ class FMXml(object):  # {{{1
             if len(buf) < 1:
                 buf = [line]
                 continue
-            if n in (100, 200):  # === or ---, exclude the last line.
+            if n in (n_level_1st, n_level_2nd):  # === or ---
+                # exclude the last line.
                 bf2 = buf[:-1]
                 buf = [buf[-1], line]
             else:
                 bf2 = buf
                 buf = [line]
-            ret.parse_para(bf2)
+            ret.parse_markdown_build_hier(bf2)
         if len(ret.root.children) < 1:
             return ret
-        ret.parse_para(buf)  # parse left data...
+        ret.parse_markdown_build_hier(buf)  # parse left data...
         return ret
 
     @classmethod  # get_lines {{{1
@@ -170,20 +199,20 @@ class FMXml(object):  # {{{1
         if line.startswith(" ") or line.startswith("\t"):
             return 0
         if len(line.lstrip("=")) < 1:
-            return 100
+            return n_level_1st  # 1st level
         if len(line.lstrip("-")) < 1:
-            return 200
+            return n_level_2nd  # 2nd level
         if not line.startswith("#"):
             return 0
         src = line.lstrip("#")
         n = len(line) - len(src)
         if n == 1:
-            return 110
+            return n_level_1st + 10  # 1st level + alpha
         if n == 2:
-            return 120
-        return n * 100
+            return n_level_2nd + 10  # 2nd level + alpha
+        return n * n_level_unit
 
-    def parse_para(self, buf: List[Text]) -> None:  # {{{1
+    def parse_markdown_build_hier(self, buf: List[Text]) -> None:  # {{{1
         line_2nd = buf[1] if len(buf) > 1 else ""
         n = self.is_section_line(line_2nd)
         if n == 10:
@@ -197,22 +226,23 @@ class FMXml(object):  # {{{1
         cur = self.cur
         if cur.n_level == n:
             cur.append_to_parent(nod, self.root)
-        elif cur.n_level > n:
-            upto = cur.n_level - n
-            self.parse_para_insert(upto, cur, nod)
-        else:  # cur < new
+        elif cur.n_level > n:  # cur > new -> drill up
+            self.hier_insert_and_up(cur, nod)
+        else:                  # cur < new -> drill down
             cur.append(nod)
         self.cur = nod
 
-    def parse_para_insert(self, n: int, prv: MDNode, cur: MDNode  # {{{1
-                          ) -> None:
-        n = n // 100
-        while n >= 0:
-            n -= 1
-            if prv.parent is None:
+    def hier_insert_and_up(self, cur: MDNode, ins: MDNode  # {{{1
+                           ) -> None:
+        ni = ins.n_level
+        par = cur
+        while ni <= par.n_level:
+            tmp = par.parent
+            if tmp is None or par.n_level < n_level_unit:
+                par = self.root
                 break
-            prv = prv.parent
-        prv.append(cur)
+            par = tmp
+        par.append(ins)
 
     def output(self, fname: Text) -> int:  # {{{1
         debg("out:open:" + fname)
