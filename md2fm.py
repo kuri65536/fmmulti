@@ -24,8 +24,6 @@ Dict, Optional
 n_level_unit = 100
 n_level_1st = 100
 n_level_2nd = 200
-ch_splitter = "-"
-sub_digit = [chr(i) for i in range(ord("a"), ord("z") + 1)]
 
 
 class options(object):  # {{{1
@@ -129,11 +127,10 @@ class MDNode(Node):  # {{{1
     def attr_section_number_from_nodes(self, prv: Node) -> Text:  # {{{1
         if isinstance(prv, MDNode):
             num = prv.attr_section_number_text(prv)
-            num = MDNode.section_num_incr_sub(num)
+            num = cmn.section_num_incr_desc(num)
             return num
         assert isinstance(self.parent, MDNode)
-        num = self.parent.section + ch_splitter + "0" + sub_digit[0]
-        num = num.lstrip(ch_splitter)
+        num = cmn.section_num_1st(self.parent.section)
         return num
 
     def append(self, nod: 'MDNode') -> None:  # {{{1
@@ -160,28 +157,6 @@ class MDNode(Node):  # {{{1
 
     def __repr__(self) -> Text:  # for debug {{{1
         return "{}-{}".format(self.n_level, self.title)
-
-    @classmethod  # section_num_incr_sub {{{1
-    def section_num_incr_sub(cls, num: Text) -> Text:
-        if len(num) < 1:
-            return sub_digit[0]
-        spl = ch_splitter
-        seq = num.split(spl)
-        lst = seq[-1]
-        if lst.isdigit():
-            return spl.join(seq[:-1] + [lst + sub_digit[0]])
-        num = lst.rstrip("".join(sub_digit))
-        lst = lst.lstrip(num)
-        n, N = 0, len(sub_digit)
-        for ch in lst:
-            n = n * N + sub_digit.index(ch)
-        n += 1
-        lst = ""
-        while n > 0:
-            lst += sub_digit[int(n % N)]
-            n = (int)(n / N)
-        ret = spl.join(seq[:-1] + [num + lst])
-        return ret
 
 
 class FMXml(object):  # {{{1

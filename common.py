@@ -7,12 +7,16 @@ This Source Code Form is subject to the terms of the Mozilla Public License,
 v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
+from logging import warning as warn
 import os
 from typing import (Dict, List, Text, )
 from xml.sax.saxutils import escape as quote_xml
 
 List
 quote_xml
+
+ch_splitter = "-"
+sub_digit = [chr(i) for i in range(ord("a"), ord("z") + 1)]
 
 
 def number_output(f_override: bool, src: Text, sfx: Text) -> Text:  # {{{1
@@ -31,6 +35,53 @@ def number_output(f_override: bool, src: Text, sfx: Text) -> Text:  # {{{1
     while os.path.exists(ret):
         n += 1
         ret = fn(n)
+    return ret
+
+
+def section_num_1st(num: Text) -> Text:
+    num = num + ch_splitter + "0" + sub_digit[0]
+    num = num.lstrip(ch_splitter)
+    return num
+
+
+def section_num_conv(num: Text) -> int:  # {{{1
+    n, f, N = 0, 1, len(sub_digit)
+    for ch in num:
+        n = n * N + (sub_digit.index(ch) + f)
+        f = 1
+    return n
+
+
+def section_num_recv(n: int) -> Text:  # {{{1
+    if n < 1:
+        return sub_digit[0]
+    n, lst, N = n, "", len(sub_digit)
+    while True:
+        n -= 1
+        i = int(n % N)
+        lst = sub_digit[i] + lst
+        n = int(n / N)
+        # warn("num1:{}-{}".format(i, n))
+        if n < 1:
+            break
+    # warn("num2:{}".format(n - 1))
+    return lst
+
+
+def section_num_incr_desc(num: Text) -> Text:  # {{{1
+    if len(num) < 1:
+        return sub_digit[0]
+    spl = ch_splitter
+    seq = num.split(spl)
+    lst = seq[-1]
+    if lst.isdigit():
+        return spl.join(seq[:-1] + [lst + sub_digit[0]])
+    hed = lst.rstrip("".join(sub_digit))
+    lst = lst.lstrip(hed)
+    n = section_num_conv(lst)
+    n += 1
+    lst = section_num_recv(n)
+    ret = spl.join(seq[:-1] + [hed + lst])
     return ret
 
 
