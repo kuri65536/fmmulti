@@ -81,5 +81,34 @@ class TestCommon(TestCase):  # {{{1
         self.assertEqual("0-0aa", dut("0-0z"))
         self.assertEqual("999-999a", dut("999-999"))
 
+
+def main_section_num() -> None:  # {{{1
+    dgt = [chr(i) for i in range(ord('a'), ord('z') + 1)]
+    cur = "a"
+
+    print("{:3d},{}".format(1, cur))
+
+    for i in range(2, 18300):
+        new = ""
+        ch = cur[-1]
+        n = dgt.index(ch)
+        carry = n == len(dgt) - 1
+        if carry:
+            new = dgt[0]
+        else:
+            new = dgt[n + 1]
+        for ch in reversed(cur[:-1]):
+            n = dgt.index(ch)
+            if not carry:
+                new = ch + new
+            elif n == len(dgt) - 1:
+                new = dgt[0] + new  # carry = continue...
+            else:
+                carry, new = False, dgt[n + 1] + new
+        if carry:
+            new = dgt[0] + new
+        cur = new
+        print("{:3d},{}".format(i, new))
+
 # end of file {{{1
 # vi: ft=python:et:ts=4:sw=4:tw=80:fdm=marker
