@@ -7,12 +7,12 @@ This Source Code Form is subject to the terms of the Mozilla Public License,
 v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
-from logging import warning as warn
 import os
-from typing import (Dict, List, Text, )
+from logging import warning as warn
+from typing import (Dict, List, Optional, Text, )
 from xml.sax.saxutils import escape as quote_xml
 
-List
+List, Optional
 quote_xml
 
 ch_splitter = "-"
@@ -106,6 +106,11 @@ class Node(object):  # {{{1
         self.name = name
         self.attr = attr
         self.children: List['Node'] = []
+        self.parent: Optional['Node'] = None
+
+    def __repr__(self) -> Text:  # for debug {{{1
+        par = self.parent.name if self.parent is not None else "None"
+        return "{}-{}-{}".format(self.name, len(self.children), par)
 
     def compos2(self) -> Text:  # {{{1
         ret = "<" + self.name
@@ -120,6 +125,31 @@ class Node(object):  # {{{1
             return ret + ">"
         ret += "/>\n"
         return ret
+
+    def level_diff(self, b: 'Node') -> int:  # {{{1
+        assert False
+
+    def append(self, nod: 'Node') -> None:  # {{{1
+        if self.name == "root":  # root will not have level_diff()
+            dif = 0
+        else:
+            dif = self.level_diff(nod)
+        warn("append: {}".format(dif))
+        # nod_dummy, n = self, self.n_level
+        nod_dummy = self
+        for i in range(dif - 1):
+            # n += n_level_unit
+            nod_dummy_child = Node("### dummy paragraph ###", {})
+            nod_dummy.children.append(nod_dummy_child)
+            nod_dummy_child.parent = nod_dummy
+            nod_dummy = nod_dummy_child
+        nod_dummy.children.append(nod)
+        nod.parent = nod_dummy
+
+    def append_to_parent(self, nod: 'Node', root: 'Node') -> None:  # {{{1
+        par = self.parent if self.parent is not None else root
+        par.children.append(nod)
+        nod.parent = par
 
 
 class NodeDmy(Node):  # {{{1
@@ -169,4 +199,38 @@ class NodeNote(Node):  # {{{1
         if self.f_data:
             self.note += data
 
+
+class HierBuilder(object):  # {{{1
+    def __init__(self) -> None:  # {{{1
+        self.cur = self.root = Node("root", {})
+
+    def insert_node(self, nod: Node) -> None:  # {{{1
+        cur = self.cur
+        res = nod.level_diff(cur)
+        warn("{}-{}-{}".format(res, cur, nod))
+        if res == 0:
+            cur.append_to_parent(nod, self.root)
+        elif res < 0:  # new < cur -> drill up
+            self.hier_insert_and_up(cur, nod)
+        else:          # new > cur -> drill down
+            cur.append(nod)
+        self.cur = nod
+
+    def hier_insert_and_up(self, cur: Node, ins: Node  # {{{1
+                           ) -> None:
+        par = cur
+        while True:
+            if par.name == "root":  # root will not have level_diff()
+                break
+            if par.level_diff(ins) < 0:
+                break
+            tmp = par.parent
+            if tmp is None:  # or par.n_level < n_level_unit:
+                par = self.root
+                break
+            par = tmp
+        par.append(ins)
+
+
+# end of file {{{1
 # vi: ft=python:et:ts=4:sw=4:tw=80:fdm=marker

@@ -9,14 +9,14 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 from argparse import ArgumentParser
 import logging
-from logging import debug as debg, warning as warn
+from logging import (debug as debg, )  # , warning as warn
 import re
 import sys
 import time
 from typing import (Dict, Iterable, List, Optional, Text, )
 
 import common as cmn
-from common import Node, NodeDmy, NodeNote
+from common import HierBuilder, Node, NodeDmy, NodeNote
 
 Dict, Optional
 
@@ -129,40 +129,28 @@ class MDNode(Node):  # {{{1
             num = prv.attr_section_number_text(prv)
             num = cmn.section_num_incr_desc(num)
             return num
-        assert isinstance(self.parent, MDNode)
-        num = cmn.section_num_1st(self.parent.section)
+        if isinstance(self.parent, MDNode):
+            num = self.parent.section
+        else:
+            num = ""
+        num = cmn.section_num_1st(num)
         return num
 
-    def append(self, nod: 'MDNode') -> None:  # {{{1
-        dif = self.level_diff(nod)
-        warn("append: {}".format(dif))
-        nod_dummy, n = self, self.n_level
-        for i in range(dif - 1):
-            n += n_level_unit
-            nod_dummy_child = MDNode("### dummy paragraph ###", [], n)
-            nod_dummy.children.append(nod_dummy_child)
-            nod_dummy_child.parent = nod_dummy
-            nod_dummy = nod_dummy_child
-        nod_dummy.children.append(nod)
-        nod.parent = nod_dummy
-
-    def append_to_parent(self, nod: 'MDNode', root: 'MDNode') -> None:  # {{{1
-        par = self.parent if self.parent is not None else root
-        par.children.append(nod)
-        nod.parent = par
-
-    def level_diff(self, nod: 'MDNode') -> int:  # {{{1
-        n = nod.n_level - self.n_level
-        return int(n / n_level_unit)
+    def level_diff(self, nod: 'Node') -> int:  # {{{1
+        if isinstance(nod, MDNode):
+            n = nod.n_level
+        elif nod.name == "root":
+            n = 0
+        else:
+            n = n_level_unit * 10
+        n = self.n_level - n
+        return round(n / n_level_unit)
 
     def __repr__(self) -> Text:  # for debug {{{1
         return "{}-{}".format(self.n_level, self.title)
 
 
-class FMXml(object):  # {{{1
-    def __init__(self) -> None:  # {{{1
-        self.cur = self.root = MDNode("root", [], 0)
-
+class FMXml(HierBuilder):  # {{{1
     @classmethod  # parse {{{1
     def parse_markdown(cls, fname: Text) -> 'FMXml':
         """parse Nodes from markdown
@@ -238,25 +226,7 @@ class FMXml(object):  # {{{1
             n = self.is_section_line(buf[0], [])
             title, buf = buf[0].lstrip("#"), buf[1:]
         nod = MDNode(title, buf, n)
-        cur = self.cur
-        if cur.n_level == n:
-            cur.append_to_parent(nod, self.root)
-        elif cur.n_level > n:  # cur > new -> drill up
-            self.hier_insert_and_up(cur, nod)
-        else:                  # cur < new -> drill down
-            cur.append(nod)
-        self.cur = nod
-
-    def hier_insert_and_up(self, cur: MDNode, ins: MDNode  # {{{1
-                           ) -> None:
-        par = cur
-        while par.level_diff(ins) <= 0:
-            tmp = par.parent
-            if tmp is None or par.n_level < n_level_unit:
-                par = self.root
-                break
-            par = tmp
-        par.append(ins)
+        self.insert_node(nod)
 
     def output(self, fname: Text) -> int:  # {{{1
         debg("out:open:" + fname)
