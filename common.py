@@ -8,11 +8,12 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 import os
-from logging import warning as warn
+from logging import warning as warn, debug as debg
 from typing import (Dict, List, Optional, Text, )
 from xml.sax.saxutils import escape as quote_xml
 
 List, Optional
+warn
 quote_xml
 
 ch_splitter = "-"
@@ -107,6 +108,7 @@ class Node(object):  # {{{1
         self.attr = attr
         self.children: List['Node'] = []
         self.parent: Optional['Node'] = None
+        self.f_enter_only = False
 
     def __repr__(self) -> Text:  # for debug {{{1
         par = self.parent.name if self.parent is not None else "None"
@@ -121,10 +123,17 @@ class Node(object):  # {{{1
 
     def compose(self, prv: 'Node') -> Text:  # {{{1
         ret = self.compos2()
-        if self.name == "map":  # TODO(shimoda): dirty hack...
+        if self.f_enter_only:
             return ret + ">"
         ret += "/>\n"
         return ret
+
+    def enter_only(self, f: bool) -> 'Node':  # {{{1
+        self.f_enter_only = f
+        return self
+
+    def level_flat(self) -> bool:  # {{{1
+        return True
 
     def level_diff(self, b: 'Node') -> int:  # {{{1
         assert False
@@ -134,7 +143,7 @@ class Node(object):  # {{{1
             dif = 0
         else:
             dif = self.level_diff(nod)
-        warn("append: {}".format(dif))
+        debg("append: {}".format(dif))
         # nod_dummy, n = self, self.n_level
         nod_dummy = self
         for i in range(dif - 1):
@@ -204,10 +213,20 @@ class HierBuilder(object):  # {{{1
     def __init__(self) -> None:  # {{{1
         self.cur = self.root = Node("root", {})
 
+    def restruct(self, seq: List[Node]) -> List[Node]:  # {{{1
+        ret: List[Node] = []
+        for nod in seq:
+            if nod.level_flat():
+                self.cur.append_to_parent(nod, self.root)
+                continue
+            self.insert_node(nod)
+        ret = self.root.children + []
+        return ret
+
     def insert_node(self, nod: Node) -> None:  # {{{1
         cur = self.cur
         res = nod.level_diff(cur)
-        warn("{}-{}-{}".format(res, cur, nod))
+        debg("{}-{}-{}".format(res, cur, nod))
         if res == 0:
             cur.append_to_parent(nod, self.root)
         elif res < 0:  # new < cur -> drill up

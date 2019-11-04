@@ -10,7 +10,7 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 from argparse import ArgumentParser
 from enum import Enum
 import logging
-from logging import debug as debg
+from logging import debug as debg, warning as warn
 import tempfile
 import sys
 from typing import (Dict, List, Optional, Text, Tuple, )
@@ -18,7 +18,7 @@ from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
 
 import common as cmn
-from common import Node as Nod1, NodeDmy, NodeNote
+from common import HierBuilder, Node as Nod1, NodeDmy, NodeNote
 
 Optional
 
@@ -211,6 +211,22 @@ class Node(Nod1):  # {{{1
         for j in range(n - 1):
             del seq[-1]
 
+    def level_diff(self, b: Nod1) -> int:  # {{{1
+        if not isinstance(b, Node):
+            return 0
+
+        def lvl(a: 'Node') -> int:
+            ret = len(self.level(a, self.key_attr_mode))
+            ret -= 1
+            ret = 0 if ret < 0 else ret
+            return 100 * ret
+
+        lvl_a = lvl(self)
+        lvl_b = lvl(b)
+        ret = round((lvl_a - lvl_b) / 100)
+        warn("nod2:diff:{}-{}-{}".format(ret, self, b))
+        return ret
+
 
 class Chars(Node):  # {{{1
     def __init__(self, data: Text) -> None:  # {{{1
@@ -273,6 +289,9 @@ class FMNode(Node):  # {{{1
             ret += '</node>'
         return ret
 
+    def level_flat(self) -> bool:  # {{{1
+        return False
+
 
 class FMXml(object):  # {{{1
     def __init__(self) -> None:  # {{{1
@@ -306,7 +325,7 @@ class FMXml(object):  # {{{1
             self.cur_rich.enter_tag(name, attrs)
             return
         elif name != "richcontent":
-            nod = Nod1(name, attrs)
+            nod: Nod1 = Node(name, attrs)
         else:
             nod = self.cur_rich = NodeNote("")
         self.cur.children.append(nod)
@@ -382,62 +401,17 @@ class FMXml(object):  # {{{1
                 continue
             seq_flat = node.flattern(exclude_self=True)
             debg("rest:flat:{}".format(len(seq_flat)))
-            seq_flat.sort(key=Node.key_attr)
             for i in seq_flat:
                 debg("rest:sort:{}".format(i.name))
-            root = self.restruct_hier(seq_flat, mode)
-            ret.append(root)
+            ret.extend(seq_flat)
+        ret.sort(key=Node.key_attr)
+        ret = HierBuilder().restruct(seq_flat)
+        ret.insert(0, Nod1("map", {}).enter_only(True))
+        ret.insert(1, Nod1("node", {}).enter_only(True))
+        ret.append(LNode("node"))
+        ret.append(LNode("map"))
         debg("rest:ret={}".format(len(ret)))
         return ret
-
-    def restruct_hier(self, seq: List[Nod1], mode: runmode  # {{{1
-                      ) -> FMNode:
-        root = FMNode({"TEXT": mode.t()})
-        non: List[Nod1] = []
-        for node in seq:
-            levels = Node.level(node, mode)
-            if len(levels) < 1:
-                non.append(node)
-                continue
-            debg("hier:{}".format(Text(levels)))
-            self.restruct_insert(root.children, mode, levels, node, 0)
-        Node.insert_enter(root.children, 0)
-        Node.insert_enter(root.children, -1)
-        root.children.extend(non)
-        Node.insert_enter(root.children, -1)
-        return root
-
-    def restruct_insert(self, seq: List[Nod1], mode: runmode,  # {{{1
-                        levels: Tuple[int, ...],
-                        add: Nod1, depth: int) -> int:
-        """1, 2, 2-1, 3-1, 4, 5, 6-1, 7
-        """
-        if depth > 7:
-            return 1  # stopper of recursive calls.
-        f = 0
-        for n, node in enumerate(seq):
-            cmp = Node.level_cmp(node, mode, levels, depth + 1)
-            if cmp > 0:
-                continue
-            if cmp < 0:
-                f = n - 1
-                break
-            if depth + 1 >= len(levels):  # failed to sort?
-                return -1
-            if len(node.children) < 1:
-                f = n
-                break
-            f = self.restruct_insert(node.children, mode, levels,
-                                     add, depth + 1)
-            assert f != 0  # failed to append...????
-            return f
-        if f > 0:
-            Node.insert_enter(seq, f)
-            seq.insert(f, add)
-            return f + 1
-        Node.insert_enter(seq, -1)
-        seq.append(add)
-        return len(seq) - 1
 
 
 def zip_extract(fname: Text) -> Text:  # {{{1
