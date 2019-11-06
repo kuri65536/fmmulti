@@ -45,6 +45,14 @@ def section_num_1st(num: Text) -> Text:
     return num
 
 
+def section_num_to_int(num: Text) -> int:  # {{{1
+    dgt = num.rstrip("".join(sub_digit))
+    alp = num.replace(dgt, "")
+    ret = int(dgt) * 1000
+    ret += section_num_conv(alp)
+    return ret
+
+
 def section_num_conv(num: Text) -> int:  # {{{1
     n, f, N = 0, 1, len(sub_digit)
     for ch in num:
@@ -125,7 +133,7 @@ class Node(object):  # {{{1
         ret = self.compos2()
         if self.f_enter_only:
             return ret + ">"
-        ret += "/>\n"
+        ret += "/>"
         return ret
 
     def enter_only(self, f: bool) -> 'Node':  # {{{1

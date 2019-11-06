@@ -108,24 +108,27 @@ class Node(Nod1):  # {{{1
         if exclude_self:
             ret.clear()
         for i in self.children:
-            if isinstance(i, FMNode):
-                ret.extend(i.flattern(False))
-            elif exclude_self:
-                debg("flat:normal-a-{}".format(i.name))
-                ret.append(i)
-            else:
-                debg("flat:normal-d-{}".format(i.name))
+            if not isinstance(i, FMNode):
                 dmy.children.append(i)
+                continue
+            ret.extend(i.flattern(exclude_self=False))
         Node.rtrim_enter(dmy.children)
+        warn("flat:{}-{}".format(dmy, len(ret)))
         return ret
 
     @classmethod  # key_attr {{{1
     def key_attr(cls, a: Nod1) -> int:
-        N = 8
-        lv = cls.level(a, cls.key_attr_mode) + (0, ) * N
+        # TODO(kuriyama): from section_num_to_int
+        N, U = 8, 100000
         ret = 0
-        for i in range(N):
-            ret = ret * 1000 + lv[i]
+        if False:  # special case...
+            pass
+        else:
+            lv = cls.level(a, cls.key_attr_mode) + (0, ) * N
+            ret = 0
+            for i in range(N):
+                ret = ret * U + lv[i]
+        warn("nod'{:20}'-lv{:42d}".format(Text(a), ret))
         return ret
 
     @classmethod  # level {{{1
@@ -146,30 +149,8 @@ class Node(Nod1):  # {{{1
             return (-1, )
         src = src.replace(",", "-")  # allow ',' and '-' to splitter.
         seq = src.split("-")
-        ret = tuple(int(i) for i in seq)
+        ret = tuple(cmn.section_num_to_int(i) for i in seq)
         return ret
-
-    @classmethod  # level_cmp {{{1
-    def level_cmp(cls, self: Nod1, mode: runmode, b: Tuple[int, ...],
-                  depth: int) -> int:
-        """returns: eq => 0
-            self vs b
-            1.2 vs 1.1 => 1 (gt)
-            1.2 vs 1 => 1 (gt)
-            1 vs 1.2 => -1 (lt)
-        """
-        levels_a, levels_b = cls.level(self, mode), b
-        for i in range(depth):
-            if i >= len(levels_a):
-                return -1
-            if i >= len(levels_b):
-                return 1
-            j, k = levels_a[i], levels_b[i]
-            if j > k:
-                return 1
-            if j < k:
-                return -1
-        return 0
 
     @classmethod  # is_enter {{{1
     def is_enter(cls, self: Nod1) -> bool:
@@ -244,10 +225,10 @@ class Comment(Chars):  # {{{1
 
 class LNode(Node):  # {{{1
     def __init__(self, name: Text) -> None:  # {{{1
-        Node.__init__(self, name, {})
+        Node.__init__(self, "leave - " + name, {})
 
     def compose(self, prv: Nod1) -> Text:
-        return "</" + self.name + ">"
+        return "</" + self.name.replace("leave - ", "") + ">"
 
 
 class FMNode(Node):  # {{{1
@@ -279,14 +260,14 @@ class FMNode(Node):  # {{{1
             ret += ' POSITION="{}"'.format(self.position)
         ret += ' TEXT="{}"'.format(cmn.quote_attr(self.text))
         if len(self.children) < 1:
-            ret += "/>"
+            ret += "/>\n"
         else:
             ret += ">"
             prv_child: Nod1 = NodeDmy()
             for nod in self.children:
                 ret += nod.compose(prv_child)
                 prv_child = nod
-            ret += '</node>'
+            ret += '</node>\n'
         return ret
 
     def level_flat(self) -> bool:  # {{{1
@@ -362,19 +343,6 @@ class FMXml(object):  # {{{1
         nod = Comment(data)
         self.cur.children.append(nod)
 
-    @classmethod  # compose_tag {{{1
-    def compose_tag(cls, name: Text, attrs: Dict[Text, Text]) -> Text:
-        attr = ""
-        for k, v in attrs.items():
-            attr += ' {}="{}"'.format(k, v)
-        ret = "<{}{}>".format(name, attr)
-        return ret
-
-    @classmethod  # compose_ltag {{{1
-    def compose_ltag(cls, name: Text) -> Text:
-        ret = "</{}>".format(name)
-        return ret
-
     def output(self, fname: Text, mode: runmode) -> int:  # {{{1
         debg("out:open:" + fname)
         if mode == runmode.through:
@@ -396,19 +364,25 @@ class FMXml(object):  # {{{1
         ret: List[Nod1] = []
         for node in self.root.children:
             if not isinstance(node, FMNode):
-                debg("rest:normal-node={}".format(node.name))
-                ret.append(node)
+                warn("rest:ignored-node={}".format(node.name))
+                # ret.append(node)
                 continue
-            seq_flat = node.flattern(exclude_self=True)
+            seq_flat = node.flattern(exclude_self=False)
             debg("rest:flat:{}".format(len(seq_flat)))
             for i in seq_flat:
                 debg("rest:sort:{}".format(i.name))
             ret.extend(seq_flat)
         ret.sort(key=Node.key_attr)
-        ret = HierBuilder().restruct(seq_flat)
+        ret = HierBuilder().restruct(ret)
+
+        # insert header and footer
         ret.insert(0, Nod1("map", {}).enter_only(True))
-        ret.insert(1, Nod1("node", {}).enter_only(True))
+        ret.insert(1, Chars("\n"))
+        ret.insert(2, Nod1("node", {}).enter_only(True))
+        ret.insert(3, Chars("\n"))
+        # ret.append(Chars("\n"))  # don't need, see Node.compose()
         ret.append(LNode("node"))
+        ret.append(Chars("\n"))
         ret.append(LNode("map"))
         debg("rest:ret={}".format(len(ret)))
         return ret
