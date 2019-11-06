@@ -177,6 +177,15 @@ class NodeDmy(Node):  # {{{1
         return ""
 
 
+class Chars(Node):  # {{{1
+    def __init__(self, data: Text) -> None:  # {{{1
+        Node.__init__(self, "__chars__", {})
+        self.data = data
+
+    def compose(self, prv: 'Node') -> Text:
+        return self.data
+
+
 class NodeNote(Node):  # {{{1
     def __init__(self, note: Text) -> None:  # {{{1
         self.name = "richcontent"

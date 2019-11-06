@@ -77,7 +77,9 @@ class MDNode(Node):  # {{{1
         if len(self.note) > 0:
             node = NodeNote(self.note)
             self.children.insert(0, node)
+        self.children.insert(0, cmn.Chars("\n"))
         self.children.insert(0, self.attr_section_number(prv))
+        self.children.insert(0, cmn.Chars("\n"))
         self.children.insert(0, self.attr_level_score())
         if len(self.children) < 1:
             ret += "/>\n"

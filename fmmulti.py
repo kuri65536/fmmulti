@@ -18,7 +18,7 @@ from xml.parsers.expat import ParserCreate  # type: ignore
 from zipfile import ZipFile
 
 import common as cmn
-from common import HierBuilder, Node as Nod1, NodeDmy, NodeNote
+from common import Chars, HierBuilder, Node as Nod1, NodeDmy, NodeNote
 
 Optional
 
@@ -207,15 +207,6 @@ class Node(Nod1):  # {{{1
         ret = round((lvl_a - lvl_b) / 100)
         warn("nod2:diff:{}-{}-{}".format(ret, self, b))
         return ret
-
-
-class Chars(Node):  # {{{1
-    def __init__(self, data: Text) -> None:  # {{{1
-        Node.__init__(self, "__chars__", {})
-        self.data = data
-
-    def compose(self, prv: Nod1) -> Text:
-        return self.data
 
 
 class Comment(Chars):  # {{{1
