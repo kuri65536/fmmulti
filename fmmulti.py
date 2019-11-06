@@ -166,21 +166,6 @@ class Node(Nod1):  # {{{1
             return False
         return True
 
-    @classmethod  # insert_enter {{{1
-    def insert_enter(cls, seq: List[Nod1], n: int) -> None:
-        if len(seq) < 1 or n == -1:
-            seq.append(Chars("\n"))
-            return
-        if n >= len(seq):
-            n = -1
-        if n < 0:
-            n = len(seq) + n
-            assert n >= 0, "%d" % n
-        node = seq[n]
-        if cls.is_enter(node):
-            return
-        seq.insert(n, Chars("\n"))
-
     @classmethod  # rtrim_enter {{{1
     def rtrim_enter(cls, seq: List[Nod1]) -> None:
         n = 0
