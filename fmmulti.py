@@ -29,6 +29,7 @@ class runmode(Enum):  # {{{1
     normal = 1
     doc = 2
     test = 3
+    backup = 4
 
     def t(self) -> Text:  # {{{1
         t = Text(self)
@@ -62,6 +63,7 @@ class options(object):  # {{{1
     def parser(cls) -> ArgumentParser:  # {{{1
         arg = ArgumentParser()
         arg.add_argument("-o", "--output", default="")
+        arg.add_argument("-B", "--remove-backup", action="store_true")
         arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
                          default=runmode.normal.t())
@@ -77,6 +79,7 @@ class options(object):  # {{{1
         ret.fname_out = opts.output
         ret.fname_xml = opts.input_xml
         ret.mode = runmode.parse(opts.mode)
+        FMNode.f_no_backup = opts.remove_backup
         src = ret.fname_zip = opts.input_zip_name
         if not isinstance(src, Text):
             src = ""
@@ -114,7 +117,8 @@ class Node(Nod1):  # {{{1
             n, sec0 = n + 1, (sec + "-" + Text(n)).lstrip("-")
             ret.extend(i.flattern(sec0, exclude_self=False))
         Node.rtrim_enter(dmy.children)
-        dmy.attr_replace("backup", sec if sec != "" else "root")
+        if self.key_attr_mode != runmode.backup:
+            dmy.attr_replace("backup", sec if sec != "" else "root")
         warn("flat:{}-{}".format(dmy, len(ret)))
         return ret
 
@@ -220,11 +224,14 @@ class LNode(Node):  # {{{1
     def __init__(self, name: Text) -> None:  # {{{1
         Node.__init__(self, "leave - " + name, {})
 
-    def compose(self, prv: Nod1) -> Text:
+    def compose(self, prv: Nod1) -> Text:  # {{{1
         return "</" + self.name.replace("leave - ", "") + ">"
 
 
 class FMNode(Node):  # {{{1
+    # {{{1
+    f_no_backup = False
+
     def __init__(self, attrs: Dict[Text, Text]) -> None:  # {{{1
         Node.__init__(self, "node", attrs)
         self.parent: Optional[FMNode] = None
@@ -258,6 +265,9 @@ class FMNode(Node):  # {{{1
             ret += ">"
             prv_child: Nod1 = NodeDmy()
             for nod in self.children:
+                if self.f_no_backup and (nod.name == "attribute" and
+                                         nod.attr["NAME"] == "backup"):
+                    continue
                 ret += nod.compose(prv_child)
                 prv_child = nod
             ret += '</node>\n'
