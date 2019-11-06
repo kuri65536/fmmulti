@@ -235,9 +235,7 @@ class FMXml(HierBuilder):  # {{{1
         seq = self.root.children
         with open(fname, "wt") as fp:
             fp.write('<map version="1.1.0">\n')
-            fp.write('<!-- To view this file, '
-                     'download free mind mapping software FreeMind from '
-                     'http://freemind.sourceforge.net -->\n')
+            fp.write(cmn.cmt_header + '\n')
             fp.write('<node TEXT="document">\n')
             prv: Node = NodeDmy()
             for node in seq:

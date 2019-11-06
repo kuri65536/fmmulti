@@ -19,6 +19,9 @@ quote_xml
 ch_splitter = "-"
 sub_digit = [chr(i) for i in range(ord("a"), ord("z") + 1)]
 
+cmt_header = ("<!-- To view this file, download free mind mapping software "
+              "FreeMind from http://freemind.sourceforge.net -->")
+
 
 def number_output(f_override: bool, src: Text, sfx: Text) -> Text:  # {{{1
     p = os.path.dirname(src)

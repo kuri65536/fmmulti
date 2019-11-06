@@ -367,10 +367,10 @@ class FMXml(object):  # {{{1
         ret = HierBuilder().restruct(ret)
 
         # insert header and footer
-        ret.insert(0, Nod1("map", {}).enter_only(True))
-        ret.insert(1, Chars("\n"))
-        ret.insert(2, Nod1("node", {}).enter_only(True))
-        ret.insert(3, Chars("\n"))
+        ret.insert(0, Chars("\n"))
+        ret.insert(0, Nod1("node", {"TEXT": mode.t()}).enter_only(True))
+        ret.insert(0, Chars("\n" + cmn.cmt_header + "\n"))
+        ret.insert(0, Nod1("map", {"version": "1.1.0"}).enter_only(True))
         # ret.append(Chars("\n"))  # don't need, see Node.compose()
         ret.append(LNode("node"))
         ret.append(Chars("\n"))
