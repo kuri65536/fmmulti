@@ -10,8 +10,8 @@ How to use?
 -----------------------------------------
 ### requirements to a document
 - write down requirements to freemind nodes.
-- append `doc` attributes in format to nodes.
-- run `fmmulti -m doc` to convert document structure.
+- append `doc` attributes to nodes.
+- run `fmmulti.py -m doc file` to convert document structure.
 
 ### documents to requirements
 - write down a document in markdown.
@@ -75,12 +75,12 @@ Releases and Plans
 
 | version | description |
 |:-------:|:---|
-| 3.0.0   | (under construction) convert freemind to UML |
+| 3.0.0   | (under construction) freemind plugin |
 | 2.0.0   | (under construction) convert freemind to UML |
 | 1.0.0   | (under construction) convert freemind to markdown |
 | 0.4.1   | (under construction) tool to convert `backup` attributes to several attributes |
 | 0.4.0   | (under construction) save original structure in `backup` attributes |
-| 0.3.0   | (under construction) restruct freemind by `doc` attributes |
+| 0.3.0 o | restruct freemind by `doc` attributes |
 | 0.2.0 o | convert markdown to freemind format |
 | 0.1.0 o | start to debug |
 
