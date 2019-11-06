@@ -125,6 +125,18 @@ class Node(object):  # {{{1
         par = self.parent.name if self.parent is not None else "None"
         return "{}-{}-{}".format(self.name, len(self.children), par)
 
+    def attr_replace(self, name: Text, val: Text) -> None:  # {{{1
+        elem = "attribute"
+        for i in self.children:
+            if i.name != elem:
+                continue
+            if i.attr["NAME"] != name:
+                continue
+            i.attr["VALUE"] = val
+            return
+        nod = Node(elem, dict(NAME=name, VALUE=val))
+        self.children.append(nod)
+
     def compos2(self) -> Text:  # {{{1
         ret = "<" + self.name
         for k, v in self.attr.items():

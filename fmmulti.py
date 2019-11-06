@@ -102,17 +102,19 @@ class Node(Nod1):  # {{{1
 
     key_attr_mode = runmode.through
 
-    def flattern(self, exclude_self: bool) -> List[Nod1]:  # {{{1
+    def flattern(self, sec: Text, exclude_self: bool) -> List[Nod1]:  # {{{1
         dmy = self.copy()
-        ret = [dmy]
+        n, ret = 1, [dmy]
         if exclude_self:
             ret.clear()
         for i in self.children:
             if not isinstance(i, FMNode):
                 dmy.children.append(i)
                 continue
-            ret.extend(i.flattern(exclude_self=False))
+            n, sec0 = n + 1, (sec + "-" + Text(n)).lstrip("-")
+            ret.extend(i.flattern(sec0, exclude_self=False))
         Node.rtrim_enter(dmy.children)
+        dmy.attr_replace("backup", sec if sec != "" else "root")
         warn("flat:{}-{}".format(dmy, len(ret)))
         return ret
 
@@ -352,13 +354,15 @@ class FMXml(object):  # {{{1
     def restruct(self, mode: runmode) -> List[Nod1]:  # {{{1
         Node.key_attr_mode = mode
         debg("rest:mode={}-{}".format(mode, len(self.root.children)))
+        n = 0
         ret: List[Nod1] = []
         for node in self.root.children:
             if not isinstance(node, FMNode):
                 warn("rest:ignored-node={}".format(node.name))
                 # ret.append(node)
                 continue
-            seq_flat = node.flattern(exclude_self=False)
+            n += 1
+            seq_flat = node.flattern("", exclude_self=False)
             debg("rest:flat:{}".format(len(seq_flat)))
             for i in seq_flat:
                 debg("rest:sort:{}".format(i.name))
