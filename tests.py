@@ -15,10 +15,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 class TestCommand(TestCase):  # {{{1
-    def test_fmmulti_normal(self) -> None:  # {{{1
+    def test_fmmulti_through(self) -> None:  # {{{1
         import fmmulti as dut
-        dut.main(["-f", "-o", "sample-n.mm", "-i", "sample.mm",
-                  "-m", "normal"])
+        dut.main(["-f", "-o", "sample-0.mm", "-i", "sample.mm",
+                  ])
 
     def test_fmmulti_doc(self) -> None:  # {{{1
         import fmmulti as dut
@@ -29,6 +29,21 @@ class TestCommand(TestCase):  # {{{1
         import fmmulti as dut
         dut.main(["-f", "-o", "sample-t.mm", "-i", "sample.mm",
                   "-m", "test"])
+
+    def test_fmmulti_backup(self) -> None:  # {{{1
+        import fmmulti as dut
+        dut.main(["-f", "-o", "sample-b.mm", "-i", "sample.mm",
+                  "-m", "backup"])
+
+    def test_fmmulti_remove_backup(self) -> None:  # {{{1
+        import fmmulti as dut
+        dut.main(["-f", "-B", "-o", "sample-B.mm", "-i", "sample.mm",
+                  "-m", "backup"])
+
+    def test_fmmulti_convert_backup(self) -> None:  # {{{1
+        import fmmulti as dut
+        dut.main(["-f", "-o", "sample-c.mm", "-i", "sample.mm", "-c", "bck1",
+                  "-m", "backup"])
 
     def test_md2fm(self) -> None:  # {{{1
         import md2fm as dut

@@ -26,10 +26,9 @@ Optional
 class runmode(Enum):  # {{{1
     # {{{1
     through = 0
-    normal = 1
-    doc = 2
-    test = 3
-    backup = 4
+    doc = 1
+    test = 2
+    backup = 3
 
     def t(self) -> Text:  # {{{1
         t = Text(self)
@@ -57,16 +56,17 @@ class options(object):  # {{{1
         self.fname_xml = ""
         self.fname_zip = ""
         self.fname_out = ""
-        self.mode = runmode.normal
+        self.mode = runmode.through
 
     @classmethod  # parser {{{1
     def parser(cls) -> ArgumentParser:  # {{{1
         arg = ArgumentParser()
         arg.add_argument("-o", "--output", default="")
         arg.add_argument("-B", "--remove-backup", action="store_true")
+        arg.add_argument("-c", "--convert-backup", default="")
         arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
-                         default=runmode.normal.t())
+                         default=runmode.through.t())
         arg.add_argument("-i", "--input-xml", default="")
         arg.add_argument("input_zip_name", type=Text, nargs="?")
         return arg
@@ -80,6 +80,7 @@ class options(object):  # {{{1
         ret.fname_xml = opts.input_xml
         ret.mode = runmode.parse(opts.mode)
         FMNode.f_no_backup = opts.remove_backup
+        FMNode.convert_backup = opts.convert_backup
         src = ret.fname_zip = opts.input_zip_name
         if not isinstance(src, Text):
             src = ""
@@ -97,6 +98,9 @@ class options(object):  # {{{1
 
 
 class Node(Nod1):  # {{{1
+    # {{{1
+    convert_backup = ""
+
     def copy(self, include_children: bool=False) -> Nod1:  # {{{1
         ret = Node(self.name, self.attr)
         if include_children:
@@ -119,6 +123,8 @@ class Node(Nod1):  # {{{1
         Node.rtrim_enter(dmy.children)
         if self.key_attr_mode != runmode.backup:
             dmy.attr_replace("backup", sec if sec != "" else "root")
+        if Node.convert_backup:
+            dmy.attr_change_name(runmode.backup.t(), Node.convert_backup)
         warn("flat:{}-{}".format(dmy, len(ret)))
         return ret
 
@@ -293,8 +299,11 @@ class FMXml(object):  # {{{1
         if self.cur_rich is not None:
             self.cur_rich.enter_tag(name, attrs)
             return
-        elif name != "richcontent":
+        elif name == "map":  # TODO(shimoda): dirty, change parse procedures.
             nod: Nod1 = Node(name, attrs)
+            nod.f_enter_only = True
+        elif name != "richcontent":
+            nod = Node(name, attrs)
         else:
             nod = self.cur_rich = NodeNote("")
         self.cur.children.append(nod)
@@ -321,6 +330,10 @@ class FMXml(object):  # {{{1
         if self.cur_rich is not None:
             self.cur_rich.chars(data)
             return
+        seq = self.cur.children
+        if len(seq) > 0 and isinstance(seq[-1], FMNode):
+            if len(data.strip()) < 1:
+                return  # ignore white-spaces.
         nod = Chars(data)
         self.cur.children.append(nod)
 

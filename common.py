@@ -137,6 +137,16 @@ class Node(object):  # {{{1
         nod = Node(elem, dict(NAME=name, VALUE=val))
         self.children.append(nod)
 
+    def attr_change_name(self, tgt: Text, name: Text) -> None:  # {{{1
+        elem = "attribute"
+        for i in self.children:
+            if i.name != elem:
+                continue
+            if i.attr["NAME"] != tgt:
+                continue
+            i.attr["NAME"] = name
+            return
+
     def compos2(self) -> Text:  # {{{1
         ret = "<" + self.name
         for k, v in self.attr.items():
