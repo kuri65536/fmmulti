@@ -131,7 +131,7 @@ class Node(Nod1):  # {{{1
     @classmethod  # key_attr {{{1
     def key_attr(cls, a: Nod1) -> int:
         # TODO(kuriyama): from section_num_to_int
-        N, U = 8, 100000
+        N, U = cmn.lvl_cls, cmn.lvl_max + 1
         ret = 0
         if False:  # special case...
             pass
@@ -156,9 +156,9 @@ class Node(Nod1):  # {{{1
             src = node.attr.get("VALUE", "")
             break
         else:
-            return ()
+            return (cmn.lvl_max, )
         if src == "root":
-            return (-1, )
+            return cmn.lvl_root
         src = src.replace(",", "-")  # allow ',' and '-' to splitter.
         seq = src.split("-")
         ret = tuple(cmn.section_num_to_int(i) for i in seq)
@@ -190,12 +190,14 @@ class Node(Nod1):  # {{{1
             del seq[-1]
 
     def level_diff(self, b: Nod1) -> int:  # {{{1
+        if b.name == "root":
+            return 1
         if not isinstance(b, Node):
             return 0
 
         def lvl(a: 'Node') -> int:
             ret = len(self.level(a, self.key_attr_mode))
-            ret -= 1
+            ret += 1
             ret = 0 if ret < 0 else ret
             return 100 * ret
 
@@ -375,20 +377,49 @@ class FMXml(object):  # {{{1
             for i in seq_flat:
                 debg("rest:sort:{}".format(i.name))
             ret.extend(seq_flat)
+        ret = self.restruct_dup_root(ret, mode)
         ret.sort(key=Node.key_attr)
         ret = HierBuilder().restruct(ret)
 
         # insert header and footer
-        ret.insert(0, Chars("\n"))
-        ret.insert(0, Nod1("node", {"TEXT": mode.t()}).enter_only(True))
+        if len(ret) < 1 or Node.level(ret[0], mode) != cmn.lvl_root:
+            ret.insert(0, Chars("\n"))
+            ret.insert(0, Nod1("node", {"TEXT": mode.t()}).enter_only(True))
+            ret.append(LNode("node"))
         ret.insert(0, Chars("\n" + cmn.cmt_header + "\n"))
         ret.insert(0, Nod1("map", {"version": "1.1.0"}).enter_only(True))
         # ret.append(Chars("\n"))  # don't need, see Node.compose()
-        ret.append(LNode("node"))
         ret.append(Chars("\n"))
         ret.append(LNode("map"))
         debg("rest:ret={}".format(len(ret)))
         return ret
+
+    def restruct_dup_root(self, seq: List[Nod1], mode: runmode  # {{{1
+                          ) -> List[Nod1]:
+        seq_root: List[Nod1] = []
+        for i in seq:
+            if Node.level(i, mode) == cmn.lvl_root:
+                seq_root.append(i)
+            v = i.attr_get(mode.t(), "")
+            if len(v) < 1:
+                i.attr_replace(mode.t(), "99-99-99-99-99-99-99")
+        if len(seq_root) < 2:
+            return seq
+
+        seq_rot2: List[Nod1] = []
+        for i in seq_root:
+            v = i.attr_get(mode.t(), "")
+            if v == mode.t():
+                continue
+            if mode.t() in v:
+                continue
+            seq_rot2.append(i)
+        if len(seq_rot2) < 1:
+            seq_rot2 = seq_root[:-1]
+
+        for i in seq_rot2:
+            i.attr_replace(mode.t(), "99")
+        return seq
 
 
 def zip_extract(fname: Text) -> Text:  # {{{1

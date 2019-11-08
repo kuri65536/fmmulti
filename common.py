@@ -22,6 +22,11 @@ sub_digit = [chr(i) for i in range(ord("a"), ord("z") + 1)]
 cmt_header = ("<!-- To view this file, download free mind mapping software "
               "FreeMind from http://freemind.sourceforge.net -->")
 
+lvl_cls = 8
+lvl_max = 100000 - 1
+lvl_dgt = 1000
+lvl_root = ()
+
 
 def number_output(f_override: bool, src: Text, sfx: Text) -> Text:  # {{{1
     p = os.path.dirname(src)
@@ -51,7 +56,7 @@ def section_num_1st(num: Text) -> Text:
 def section_num_to_int(num: Text) -> int:  # {{{1
     dgt = num.rstrip("".join(sub_digit))
     alp = num.replace(dgt, "")
-    ret = int(dgt) * 1000
+    ret = int(dgt) * lvl_dgt
     ret += section_num_conv(alp)
     return ret
 
@@ -146,6 +151,16 @@ class Node(object):  # {{{1
                 continue
             i.attr["NAME"] = name
             return
+
+    def attr_get(self, tgt: Text, fallback: Text) -> Text:  # {{{1
+        elem = "attribute"
+        for i in self.children:
+            if i.name != elem:
+                continue
+            if i.attr["NAME"] != tgt:
+                continue
+            return i.attr.get("VALUE", fallback)
+        return fallback
 
     def compos2(self) -> Text:  # {{{1
         ret = "<" + self.name
