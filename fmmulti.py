@@ -350,6 +350,7 @@ class FMXml(object):  # {{{1
         debg("out:open:" + fname)
         if mode == runmode.through:
             seq = self.root.children
+            HierBuilder().mark_backup(seq, "root")
         else:
             seq = self.restruct(mode)
         with open(fname, "wt") as fp:
@@ -401,8 +402,6 @@ class FMXml(object):  # {{{1
             if Node.level(i, mode) == cmn.lvl_root:
                 seq_root.append(i)
             v = i.attr_get(mode.t(), "")
-            if len(v) < 1:
-                i.attr_replace(mode.t(), "99-99-99-99-99-99-99")
         if len(seq_root) < 2:
             return seq
 

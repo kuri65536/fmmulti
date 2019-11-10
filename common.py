@@ -131,16 +131,24 @@ class Node(object):  # {{{1
         return "{}-{}-{}".format(self.name, len(self.children), par)
 
     def attr_replace(self, name: Text, val: Text) -> None:  # {{{1
-        elem = "attribute"
-        for i in self.children:
+        n, elem = -1, "attribute"
+        for j, i in enumerate(self.children):
             if i.name != elem:
                 continue
+            n = j
             if i.attr["NAME"] != name:
                 continue
             i.attr["VALUE"] = val
             return
         nod = Node(elem, dict(NAME=name, VALUE=val))
-        self.children.append(nod)
+        if n == -1:
+            if len(self.children) < 1:
+                self.children.append(Chars("\n"))
+            self.children.append(nod)
+            self.children.append(Chars("\n"))
+        else:
+            self.children.insert(n, Chars("\n"))
+            self.children.insert(n, nod)
 
     def attr_change_name(self, tgt: Text, name: Text) -> None:  # {{{1
         elem = "attribute"
@@ -307,6 +315,21 @@ class HierBuilder(object):  # {{{1
             par = tmp
         par.append(ins)
 
+    def mark_backup(self, seq: List[Node], sec: Text) -> None:  # {{{1
+        n = 0
+        for nod in seq:
+            if nod.name != "node":
+                continue
+            n = n + 1
+            if sec == "root":
+                if n == 1:
+                    s = "root"
+                else:  # ??? root node == 1.
+                    s = "0" + section_num_recv(n - 1)
+            else:
+                s = (sec + "-" + Text(n)).lstrip("-")
+            nod.attr_replace("backup", s)
+            self.mark_backup(nod.children, s if s != "root" else "")
 
 # end of file {{{1
 # vi: ft=python:et:ts=4:sw=4:tw=80:fdm=marker
