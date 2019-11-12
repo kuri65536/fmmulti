@@ -49,5 +49,8 @@ class TestCommand(TestCase):  # {{{1
         import md2fm as dut
         dut.main(["-f", "-o", "sample-m.mm", "sample.md"])
 
+        import fmmulti as dut2
+        dut2.main(["-f", "-M", "0", "-o", "sample-m.md", "-i", "sample-m.mm"])
+
 # end of file {{{1
 # vi: ft=python:et:ts=4:sw=4:tw=80:fdm=marker

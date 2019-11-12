@@ -57,6 +57,7 @@ class options(object):  # {{{1
         self.fname_zip = ""
         self.fname_out = ""
         self.mode = runmode.through
+        self.n_output_markdown = False
 
     @classmethod  # parser {{{1
     def parser(cls) -> ArgumentParser:  # {{{1
@@ -64,6 +65,7 @@ class options(object):  # {{{1
         arg.add_argument("-o", "--output", default="")
         arg.add_argument("-B", "--remove-backup", action="store_true")
         arg.add_argument("-c", "--convert-backup", default="")
+        arg.add_argument("-M", "--output-markdown", type=int, default=-1)
         arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
                          default=runmode.through.t())
@@ -79,21 +81,23 @@ class options(object):  # {{{1
         ret.fname_out = opts.output
         ret.fname_xml = opts.input_xml
         ret.mode = runmode.parse(opts.mode)
+        ret.n_output_markdown = opts.output_markdown
         FMNode.f_no_backup = opts.remove_backup
         FMNode.convert_backup = opts.convert_backup
         src = ret.fname_zip = opts.input_zip_name
         if not isinstance(src, Text):
             src = ""
+        sfx = ".mm" if not (ret.n_output_markdown >= 0) else ".md"
         if len(ret.fname_out) > 0:
             src = ret.fname_out
-            ret.fname_out = cmn.number_output(opts.override, src, ".mm")
+            ret.fname_out = cmn.number_output(opts.override, src, sfx)
             return ret
         if len(src) < 1:
             src = ret.fname_xml
         if len(src) < 1:
             ret.fname_out = "/dev/stdout"
         else:
-            ret.fname_out = cmn.number_output(opts.override, src, ".mm")
+            ret.fname_out = cmn.number_output(opts.override, src, sfx)
         return ret
 
 
@@ -208,7 +212,11 @@ class Node(Nod1):  # {{{1
         return ret
 
 
-class Comment(Chars):  # {{{1
+class Comment(Nod1):  # {{{1
+    def __init__(self, data: Text) -> None:  # {{{1
+        Node.__init__(self, "__comment__", {})
+        self.data = data
+
     def compose(self, prv: Nod1) -> Text:  # {{{1
         return "<!--" + self.data + "-->"
 
@@ -274,6 +282,7 @@ class FMXml(object):  # {{{1
     def __init__(self) -> None:  # {{{1
         self.cur = self.root = FMNode({})
         self.cur_rich: Optional[NodeNote] = None
+        self.n_output_markdown = -1
 
     @classmethod  # parse {{{1
     def parse(cls, fname: Text) -> 'FMXml':
@@ -353,6 +362,10 @@ class FMXml(object):  # {{{1
             HierBuilder().mark_backup(seq, "root")
         else:
             seq = self.restruct(mode)
+        if self.n_output_markdown >= 0:
+            with open(fname, "wt") as fp:
+                fp.write("")
+            return self.output_markdown(fname, seq, self.n_output_markdown)
         with open(fname, "wt") as fp:
             prv: Nod1 = NodeDmy()
             for node in seq:
@@ -360,6 +373,43 @@ class FMXml(object):  # {{{1
                 debg("out:" + text)
                 fp.write(text)
                 prv = node
+        return 0
+
+    def output_markdown(self, fname: Text, seq: List[Nod1],  # {{{1
+                        depth: int) -> int:
+        def out_node(nod: Nod1, f: bool) -> bool:
+            with open(fname, "at") as fp:
+                if nod.name == "node":
+                    title = ("#" * depth) + " " + nod.attr.get("TEXT", "")
+                    fp.write("\n" + title + "\n")
+                elif nod.name == "__chars__":
+                    assert isinstance(nod, Chars)
+                    if not f:
+                        fp.write(nod.data)
+                    elif len(nod.data.strip()) > 0:
+                        fp.write(nod.data)
+                elif nod.name == "__comment__":
+                    assert isinstance(nod, Comment)
+                    fp.write("<!--" + nod.data + "-->")
+                elif nod.name == "richcontent":
+                    assert isinstance(nod, NodeNote)
+                    fp.write(cmn.unquote_note(nod.note))
+                elif nod.name == "attribute":
+                    fp.write("<!-- attr: {} = {} -->".format(
+                            nod.attr.get("NAME", "name?"),
+                            nod.attr.get("VALUE", "val?")))
+                elif nod.name in ("map", "leave - map", "font", ):
+                    return True
+                else:
+                    assert False
+            return False
+
+        f = True
+        for node in seq:
+            f = out_node(node, f)
+            self.output_markdown(fname, node.children, depth + 1)
+            if node.name == "node":
+                out_node(Chars("\n"), False)
         return 0
 
     def restruct(self, mode: runmode) -> List[Nod1]:  # {{{1
@@ -451,6 +501,7 @@ def main(args: List[Text]) -> int:  # {{{1
         options.parser().print_help()
         return 1
     xml = FMXml.parse(opts.fname_xml)
+    xml.n_output_markdown = opts.n_output_markdown
     return xml.output(opts.fname_out, opts.mode)
 
 

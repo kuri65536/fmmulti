@@ -118,6 +118,16 @@ def quote_attr(src: Text) -> Text:  # {{{1
     return ret
 
 
+def unquote_note(src: Text) -> Text:  # {{{1
+    seq = src.split("pre>\n")
+    if len(seq) > 2:
+        ret = "pre>\n".join(seq[1:-1])
+        ret = ret.rstrip("</")
+    else:
+        ret = src
+    return ret
+
+
 class Node(object):  # {{{1
     def __init__(self, name: Text, attr: Dict[Text, Text]) -> None:  # {{{1
         self.name = name
@@ -236,7 +246,7 @@ class Chars(Node):  # {{{1
 
 class NodeNote(Node):  # {{{1
     def __init__(self, note: Text) -> None:  # {{{1
-        self.name = "richcontent"
+        Node.__init__(self, "richcontent", {})
         self.note = note
         self.f_data = False
 
