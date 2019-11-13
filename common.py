@@ -119,6 +119,10 @@ def quote_attr(src: Text) -> Text:  # {{{1
 
 
 def unquote_note(src: Text) -> Text:  # {{{1
+    # TODO(shimoda): fix dirty unquotings in enter_tag/leave_tag
+    ret = src.rstrip()
+    if True:
+        return ret
     seq = src.split("pre>\n")
     if len(seq) > 2:
         ret = "pre>\n".join(seq[1:-1])

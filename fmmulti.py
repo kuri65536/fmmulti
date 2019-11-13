@@ -350,7 +350,7 @@ class FMXml(object):  # {{{1
 
     def enter_comment(self, data: Text) -> None:  # {{{1
         if self.cur_rich is not None:
-            self.cur_rich.note += "<!--" + data + "-->"
+            self.cur_rich.chars("<!--" + data + "-->")
             return
         nod = Comment(data)
         self.cur.children.append(nod)
