@@ -2,6 +2,7 @@ XML Processing Tools for FreeMind
 ===============================================================================
 this product includes 2 program.
 
+- fmmulti.py: convert freemind xml to markdown
 - fmmulti.py: re-structure freemind xml
 - md2fm.py: convert markdown to freemind xml
 
@@ -45,8 +46,8 @@ TODO
 - link 1-node:N-nodes for test planning.
 - make a freemind plugin.
 - link nodes from attributes.
-- convert freemind to markdown.
-- freemind: save an original structure to output's attributes.
+- o convert freemind to markdown.
+- o freemind: save an original structure to output's attributes.
 - o markdown: save an original structure to output's attributes. (as `doc` )
 - o convert markdown to freemind.
 
@@ -77,9 +78,9 @@ Releases and Plans
 |:-------:|:---|
 | 3.0.0   | (under construction) freemind plugin |
 | 2.0.0   | (under construction) convert freemind to UML |
-| 1.0.0   | (under construction) convert freemind to markdown |
+| 0.5.0 o | convert freemind to markdown |
 | 0.4.1   | (under construction) tool to convert `backup` attributes to several attributes |
-| 0.4.0   | (under construction) save original structure in `backup` attributes |
+| 0.4.0 o | save original structure in `backup` attributes |
 | 0.3.0 o | restruct freemind by `doc` attributes |
 | 0.2.0 o | convert markdown to freemind format |
 | 0.1.0 o | start to debug |

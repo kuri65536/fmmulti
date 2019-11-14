@@ -9,6 +9,7 @@ You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 import os
 from logging import warning as warn, debug as debg
+import re
 from typing import (Dict, List, Optional, Text, )
 from xml.sax.saxutils import escape as quote_xml
 
@@ -104,6 +105,7 @@ def section_num_incr_desc(num: Text) -> Text:  # {{{1
 
 def quote_attr(src: Text) -> Text:  # {{{1
     ret = ""
+    src = src.replace("\\n", "\x0b")  # pattern.A: already quoted
     for ch in src:
         _v = ch.encode('ascii', 'xmlcharrefreplace')
         v = Text(_v)
@@ -112,9 +114,14 @@ def quote_attr(src: Text) -> Text:  # {{{1
             v = v[2:-1]
             n = int(v)
             v = "&#x{:x};".format(n)
+        if ch == "\n":
+            v = "&#xa;"
+        if ch == '"':
+            v = "&quot;"
         ret += v
-    ret = ret.replace("<", "&gt;")
-    ret = ret.replace(">", "&lt;")
+    ret = ret.replace("\\x0b", "\\n")  # pattern A: already quoted
+    ret = ret.replace(">", "&gt;")
+    ret = ret.replace("<", "&lt;")
     return ret
 
 
@@ -129,6 +136,23 @@ def unquote_note(src: Text) -> Text:  # {{{1
         ret = ret.rstrip("</")
     else:
         ret = src
+    return ret
+
+
+def compose_script(mode_string: Text) -> Text:  # {{{1
+    fname = os.path.join(os.path.dirname(__file__), "fmmulti.py")
+    ret = """cur = c.getMap()
+           fname = cur.getFile().getPath()
+           fnout = fname + "-d.mm"
+           cmd = "python3 {} -i " + fname
+           cmd = cmd + " -o " + fnout
+           cmd = cmd + " -m doc"
+           print(cmd + "\\n")
+           proc = cmd.execute()
+           proc.waitForOrKill(5000)""".format(fname)
+    ret = re.sub("\n +", "\n", ret)  # strip indent
+    ret = ret.replace("-m doc", "-m " + mode_string)
+    ret = ret.replace("-d.mm", "-" + mode_string + ".mm")
     return ret
 
 

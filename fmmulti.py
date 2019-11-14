@@ -58,6 +58,7 @@ class options(object):  # {{{1
         self.fname_out = ""
         self.mode = runmode.through
         self.n_output_markdown = False
+        self.f_disable_script = False
 
     @classmethod  # parser {{{1
     def parser(cls) -> ArgumentParser:  # {{{1
@@ -65,6 +66,7 @@ class options(object):  # {{{1
         arg.add_argument("-o", "--output", default="")
         arg.add_argument("-B", "--remove-backup", action="store_true")
         arg.add_argument("-c", "--convert-backup", default="")
+        arg.add_argument("-S", "--disable-script", action="store_true")
         arg.add_argument("-M", "--output-markdown", type=int, default=-1)
         arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
@@ -82,6 +84,7 @@ class options(object):  # {{{1
         ret.fname_xml = opts.input_xml
         ret.mode = runmode.parse(opts.mode)
         ret.n_output_markdown = opts.output_markdown
+        ret.f_disable_script = opts.disable_script
         FMNode.f_no_backup = opts.remove_backup
         FMNode.convert_backup = opts.convert_backup
         src = ret.fname_zip = opts.input_zip_name
@@ -283,6 +286,7 @@ class FMXml(object):  # {{{1
         self.cur = self.root = FMNode({})
         self.cur_rich: Optional[NodeNote] = None
         self.n_output_markdown = -1
+        self.f_disable_script = False
 
     @classmethod  # parse {{{1
     def parse(cls, fname: Text) -> 'FMXml':
@@ -447,20 +451,33 @@ class FMXml(object):  # {{{1
 
     def restruct_dup_root(self, seq: List[Nod1], mode: runmode  # {{{1
                           ) -> List[Nod1]:
+        def append_script(nod: Nod1) -> None:
+            if self.f_disable_script:
+                return
+            cmds = cmn.compose_script(mode.t())
+            nod.attr_replace("script1", cmds)
+
         seq_root: List[Nod1] = []
         for i in seq:
             if Node.level(i, mode) == cmn.lvl_root:
                 seq_root.append(i)
             v = i.attr_get(mode.t(), "")
         if len(seq_root) < 2:
+            if len(seq_root) > 0:
+                append_script(seq_root[0])
             return seq
 
+        f = False
         seq_rot2: List[Nod1] = []
         for i in seq_root:
             v = i.attr_get(mode.t(), "")
-            if v == mode.t():
-                continue
-            if mode.t() in v:
+            if f:
+                pass
+            elif v != mode.t() and mode.t() in v:
+                pass
+            else:
+                f = True
+                append_script(i)
                 continue
             seq_rot2.append(i)
         if len(seq_rot2) < 1:
@@ -502,6 +519,7 @@ def main(args: List[Text]) -> int:  # {{{1
         return 1
     xml = FMXml.parse(opts.fname_xml)
     xml.n_output_markdown = opts.n_output_markdown
+    xml.f_disable_script = opts.f_disable_script
     return xml.output(opts.fname_out, opts.mode)
 
 

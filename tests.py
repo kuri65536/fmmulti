@@ -28,7 +28,7 @@ class TestCommand(TestCase):  # {{{1
     def test_fmmulti_test(self) -> None:  # {{{1
         import fmmulti as dut
         dut.main(["-f", "-o", "sample-t.mm", "-i", "sample.mm",
-                  "-m", "test"])
+                  "-S", "-m", "test"])
 
     def test_fmmulti_backup(self) -> None:  # {{{1
         import fmmulti as dut

@@ -8,6 +8,8 @@ v.2.0. If a copy of the MPL was not distributed with this file,
 You can obtain one at https://mozilla.org/MPL/2.0/.
 '''
 import logging
+import os
+import re
 from unittest import TestCase
 
 
@@ -80,6 +82,25 @@ class TestCommon(TestCase):  # {{{1
         self.assertEqual("0-0a", dut("0-0"))
         self.assertEqual("0-0aa", dut("0-0z"))
         self.assertEqual("999-999a", dut("999-999"))
+
+    def test_compose_script(self) -> None:  # {{{1
+        from common import compose_script as dut
+        ans = dut("doc")
+
+        from common import quote_attr as dut2
+        ans = dut2(ans)
+
+        exp = os.path.join(os.path.dirname(__file__), "fmmulti.py")
+        # output from freemind 1.1.0beta2
+        exp = """cur = c.getMap()&#xa;fname =
+                 cur.getFile().getPath()&#xa;fnout = fname +
+                 &quot;-doc.mm&quot;&#xa;cmd = &quot;python3
+                 {} -i &quot; + fname&#xa;cmd =
+                 cmd + &quot; -o &quot; + fnout&#xa;cmd = cmd + &quot; -m
+                 doc&quot;&#xa;print(cmd + &quot;\\n&quot;)&#xa;proc =
+                 cmd.execute()&#xa;proc.waitForOrKill(5000)""".format(exp)
+        exp = re.sub("\n +", " ", exp)  # strip indent
+        self.assertEqual(exp, ans)
 
 
 def main_section_num() -> None:  # {{{1
