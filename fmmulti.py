@@ -71,8 +71,8 @@ class options(object):  # {{{1
         arg.add_argument("-f", "--override", action="store_true")
         arg.add_argument("-m", "--mode", choices=runmode.choices(),
                          default=runmode.through.t())
-        arg.add_argument("-i", "--input-xml", default="")
-        arg.add_argument("input_zip_name", type=Text, nargs="?")
+        arg.add_argument("-z", "--input-zip-name", default="")
+        arg.add_argument("input_xml", type=Text, nargs="?")
         return arg
 
     @classmethod  # parse {{{1

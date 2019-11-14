@@ -44,8 +44,8 @@ TODO
 -----------------------------------------
 - ???: convert to uml
 - link 1-node:N-nodes for test planning.
-- make a freemind plugin.
-- link nodes from attributes.
+- o make a freemind plugin.
+- ??? link nodes from attributes.
 - o convert freemind to markdown.
 - o freemind: save an original structure to output's attributes.
 - o markdown: save an original structure to output's attributes. (as `doc` )
@@ -76,8 +76,9 @@ Releases and Plans
 
 | version | description |
 |:-------:|:---|
-| 3.0.0   | (under construction) freemind plugin |
 | 2.0.0   | (under construction) convert freemind to UML |
+| 0.6.1   | (under construction) improve node scripts to show GUI messages |
+| 0.6.0 o | freemind plugin as an node script |
 | 0.5.0 o | convert freemind to markdown |
 | 0.4.1   | (under construction) tool to convert `backup` attributes to several attributes |
 | 0.4.0 o | save original structure in `backup` attributes |
